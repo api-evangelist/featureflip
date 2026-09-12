@@ -1,0 +1,97 @@
+name: Featureflip
+description: >-
+  Feature flag platform with automated dead-flag cleanup (via a GitHub Action), flat pricing, and API-first,
+  agent-native surfaces. Exposes a Management REST API and a high-performance Evaluation API, both with public OpenAPI
+  contracts, plus SDKs for many languages.
+url: https://raw.githubusercontent.com/api-evangelist/featureflip/refs/heads/main/apis.yml
+created: '2026-09-12'
+modified: '2026-09-12'
+specificationVersion: '0.21'
+tags:
+  - feature flags
+  - feature management
+  - feature flag cleanup
+  - progressive delivery
+  - experimentation
+  - feature flags as code
+  - OpenFeature
+  - MCP
+  - developer tools
+  - DevOps/CI-CD
+apis:
+  - name: Management API
+    description: >-
+      Programmatic access to Featureflip — projects, environments, feature flags, variations, targeting, segments, and
+      SDK keys. Bearer-token auth (ffp_ personal / ffs_ service tokens).
+    humanURL: https://featureflip.io/docs/management-api/overview/
+    baseURL: https://api.featureflip.io
+    tags:
+      - feature flags
+      - feature management
+      - feature flag cleanup
+      - progressive delivery
+      - experimentation
+      - feature flags as code
+      - OpenFeature
+      - MCP
+      - developer tools
+      - DevOps/CI-CD
+    properties:
+      - type: OpenAPI
+        url: https://featureflip.io/openapi/public-v1.json
+      - type: Documentation
+        url: https://featureflip.io/docs/management-api/reference/
+      - type: Documentation
+        url: https://featureflip.io/docs/management-api/authentication/
+      - type: LLMsTxt
+        url: https://featureflip.io/llms.txt
+  - name: Evaluation API
+    description: >-
+      High-performance feature flag evaluation service for SDKs, with client and SDK endpoints for evaluation, identify,
+      streaming, flags, and events.
+    humanURL: https://featureflip.io/docs/api/overview/
+    baseURL: https://eval.featureflip.io
+    tags:
+      - feature flags
+      - feature management
+      - feature flag cleanup
+      - progressive delivery
+      - experimentation
+      - feature flags as code
+      - OpenFeature
+      - MCP
+      - developer tools
+      - DevOps/CI-CD
+    properties:
+      - type: OpenAPI
+        url: https://featureflip.io/openapi/evaluation-v1.json
+      - type: Documentation
+        url: https://featureflip.io/docs/api/reference/
+  - name: MCP Server (local)
+    description: >-
+      Documentation for the @featureflip/mcp server, a local stdio process run via npx that calls the Management API on
+      your behalf using a bearer token.
+    humanURL: https://featureflip.io/docs/integrations/mcp/
+    baseURL: https://featureflip.io/docs/integrations/mcp/
+    tags:
+      - feature flags
+      - feature management
+      - feature flag cleanup
+      - progressive delivery
+      - experimentation
+      - feature flags as code
+      - OpenFeature
+      - MCP
+      - developer tools
+      - DevOps/CI-CD
+    properties:
+      - type: Documentation
+        url: https://featureflip.io/docs/integrations/mcp/
+maintainers:
+  - FN: Featureflip
+    url: https://featureflip.io/
+generated:
+  by: apis.io/add
+  model: claude-opus-4-8
+  confidence: 97
+  at: '2026-09-12T04:54:28.200Z'
