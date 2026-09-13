@@ -1,0 +1,26 @@
+generated: '2026-09-13'
+method: searched
+source: >-
+  https://featureflip.io/docs/management-api/conventions/ and the response
+  headers/codes declared in openapi/featureflip-management-api.json (components
+  headers X-RateLimit-*, 429 responses, Retry-After).
+api: Management API
+notes: >-
+  The docs and OpenAPI document the rate-limit signaling headers and the 429
+  behavior, but do NOT publish specific numeric limits (requests-per-window),
+  so limit_count reflects the number of documented limit tiers, not a numeric cap.
+limit_count: 0
+response_headers:
+  - name: X-RateLimit-Limit
+    meaning: ceiling for the current window
+  - name: X-RateLimit-Remaining
+    meaning: requests remaining in the current window
+  - name: X-RateLimit-Reset
+    meaning: Unix timestamp (seconds) when the window resets
+  - name: Retry-After
+    meaning: seconds to wait after a 429
+exhaustion:
+  status: 429
+  error_code: rate_limited
+  body_field: retry_after
+limits: []

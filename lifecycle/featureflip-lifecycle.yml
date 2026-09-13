@@ -1,0 +1,31 @@
+generated: '2026-09-13'
+method: searched
+source: >-
+  https://featureflip.io/docs/management-api/conventions/ ,
+  https://featureflip.io/changelog/ , and probes for a status page.
+versioning:
+  scheme: url-prefix
+  current: v1
+  policy: >-
+    Breaking changes get a new version prefix; additive changes happen within v1.
+deprecation:
+  policy_published: false
+  sunset_header: false
+  deprecation_header: false
+  deprecated_operations: []
+  note: >-
+    No RFC 8594 Sunset/Deprecation header policy or dated deprecation schedule is
+    published; no operations are marked deprecated in the OpenAPI. Version
+    stability is expressed via the /api/v1 prefix and the frozen error envelope.
+status_page:
+  present: false
+  note: >-
+    No status page found. status.featureflip.io did not resolve and
+    featureflip.io/status/ returned 404 at probe time.
+sla:
+  published: false
+  note: A guaranteed SLA is offered only on the Enterprise plan (contact sales).
+changelog:
+  present: true
+  url: https://featureflip.io/changelog/
+  artifact: changelog/featureflip-changelog.yml

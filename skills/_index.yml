@@ -1,0 +1,23 @@
+generated: '2026-09-13'
+method: generated
+source: >-
+  Grounded in real operations from openapi/featureflip-management-api.json. The
+  Management spec declares no operationId, so steps reference operations by
+  METHOD + path (the same binding used in mcp/featureflip-tool-crosswalk.yml).
+api: Management API
+base_url: https://api.featureflip.io
+auth: "Authorization: Bearer <ffp_ or ffs_ token>"
+conventions:
+  - Idempotency-Key header on create (POST) operations
+  - cursor pagination (cursor param; items[] + next_cursor)
+  - stable snake_case error envelope (error/message/docs_url)
+skills:
+  - file: featureflip-progressive-rollout.md
+    name: progressive-rollout
+    summary: Create a flag and ramp it from 1% to 100% with a percentage rollout.
+  - file: featureflip-dead-flag-cleanup.md
+    name: dead-flag-cleanup
+    summary: Find confidently-dead / stale flags and archive them safely.
+  - file: featureflip-targeting-rule.md
+    name: targeting-rule
+    summary: Serve a variation to a targeted user segment with a first-match rule.

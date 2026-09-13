@@ -1,0 +1,50 @@
+generated: '2026-09-13'
+method: probed
+source: >-
+  Live GET probes of /.well-known/ paths against every host the record knows.
+  No .well-known documents are served on any host; every path returned 404.
+  No common-type pointer is emitted (a recorded absence, not a presence).
+notes: >-
+  Featureflip authenticates with bearer API tokens (apiKey scheme), not OAuth, so
+  no oauth-authorization-server / openid-configuration is expected. No security.txt,
+  api-catalog, ai-plugin.json or agent-card is served.
+hosts:
+  - host: featureflip.io
+    documents:
+      - path: /.well-known/security.txt
+        status: 404
+        file: null
+      - path: /.well-known/openid-configuration
+        status: 404
+        file: null
+      - path: /.well-known/oauth-authorization-server
+        status: 404
+        file: null
+      - path: /.well-known/api-catalog
+        status: 404
+        file: null
+      - path: /.well-known/ai-plugin.json
+        status: 404
+        file: null
+      - path: /.well-known/agent-card.json
+        status: 404
+        file: null
+      - path: /.well-known/agent.json
+        status: 404
+        file: null
+  - host: api.featureflip.io
+    documents:
+      - path: /.well-known/oauth-authorization-server
+        status: 404
+        file: null
+      - path: /.well-known/oauth-protected-resource
+        status: 404
+        file: null
+      - path: /.well-known/agent-card.json
+        status: 404
+        file: null
+  - host: eval.featureflip.io
+    documents:
+      - path: /.well-known/agent-card.json
+        status: 404
+        file: null

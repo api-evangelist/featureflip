@@ -1,0 +1,36 @@
+overlay: 1.0.0
+info:
+  title: Featureflip Management API — API Evangelist enrichment overlay
+  version: 1.0.0
+extends: ../openapi/featureflip-management-api.json
+x-provenance:
+  generated: '2026-09-13'
+  method: generated
+  source: >-
+    API Evangelist enrichment. Captures cross-cutting semantics documented at
+    featureflip.io but not carried inline in the OpenAPI (idempotency, rate-limit
+    headers, cursor pagination, stable error envelope). Non-mutating to the
+    original spec.
+actions:
+  - target: $.info
+    description: Record the stable error contract, auth token prefixes, and docs.
+    update:
+      x-error-envelope: PublicApiErrorEnvelope (frozen snake_case; error/message/docs_url required)
+      x-auth-token-prefixes: [ffp_ (personal), ffs_ (service)]
+      x-docs: https://featureflip.io/docs/management-api/
+  - target: "$.paths[*][?(@.parameters)]"
+    description: Note that create (POST) operations accept an Idempotency-Key header.
+    update:
+      x-idempotency-key: supported on all resource-creating POST operations (409 idempotency_key_in_progress on concurrent same-key)
+  - target: "$.paths[*].get"
+    description: Note cursor pagination convention on list endpoints.
+    update:
+      x-pagination:
+        style: cursor
+        request_param: cursor
+        response_fields: [items, next_cursor]
+  - target: "$.components.headers"
+    description: Document the rate-limit response headers as a cross-cutting convention.
+    update:
+      x-rate-limit-headers: [X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After]
+      x-rate-limit-exhaustion: 429 rate_limited

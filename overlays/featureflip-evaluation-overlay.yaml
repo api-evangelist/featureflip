@@ -1,0 +1,27 @@
+overlay: 1.0.0
+info:
+  title: Featureflip Evaluation API — API Evangelist enrichment overlay
+  version: 1.0.0
+extends: ../openapi/featureflip-evaluation-api.json
+x-provenance:
+  generated: '2026-09-13'
+  method: generated
+  source: >-
+    API Evangelist enrichment. Records SDK-key auth semantics, the SSE streaming
+    surface, and the RFC 9457 problem+json error shape. Non-mutating to the
+    original spec.
+actions:
+  - target: $.info
+    description: Record auth semantics and docs.
+    update:
+      x-auth: 'SDK key sent as "Authorization: Bearer <sdk-key>" (per-environment; client keys return only client-visible flags as pre-evaluated values)'
+      x-error-envelope: ProblemDetails (application/problem+json, RFC 7807/9457)
+      x-docs: https://featureflip.io/docs/api/overview/
+  - target: "$.paths['/v1/client/stream']"
+    description: Note the Server-Sent Events streaming contract.
+    update:
+      x-transport: Server-Sent Events (text/event-stream); real-time client flag updates
+  - target: "$.paths['/v1/sdk/stream']"
+    description: Note the Server-Sent Events streaming contract.
+    update:
+      x-transport: Server-Sent Events (text/event-stream); real-time flag updates

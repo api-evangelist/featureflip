@@ -1,0 +1,64 @@
+generated: '2026-09-13'
+method: searched
+source: https://featureflip.io/changelog/ (and the changelog section of llms.txt)
+scheme: dated (newest first), covering API, SDKs, and integrations
+docs: https://featureflip.io/changelog/
+entries:
+  - date: '2026-09-09'
+    title: GitHub Action that removes dead flags from your source
+    highlights: >-
+      The flag cleanup Action reads removal candidates from the public API,
+      deletes the flag branch in your repo, and opens one PR per flag. AST
+      transforms, deterministic patches, runs in your CI holding your token.
+    breaking: false
+  - date: '2026-09-06'
+    title: OpenFeature provider for Java
+    highlights: >-
+      io.featureflip:featureflip-openfeature on Maven Central wraps the Java SDK.
+    breaking: false
+  - date: '2026-09-06'
+    title: OpenFeature provider for Go
+    highlights: >-
+      github.com/canopy-labs/featureflip-go-openfeature wraps the Go SDK.
+    breaking: false
+  - date: '2026-08-28'
+    title: OpenFeature provider for Python
+    highlights: featureflip-openfeature-provider on PyPI wraps the Python SDK.
+    breaking: false
+  - date: '2026-08-26'
+    title: One date grammar across every SDK
+    highlights: >-
+      Before/After targeting rules now parse dates identically in every SDK
+      (ISO-8601 or Unix seconds only). Also fixed analytics delivery re-queueing.
+    breaking: true
+    breaking_note: >-
+      The .NET SDK no longer accepts US-style/slash-separated date formats it
+      previously allowed.
+  - date: '2026-07-29'
+    title: Evaluation inspectors across the server SDKs
+    highlights: >-
+      Register a callback that fires on each evaluation with flag key, context,
+      value, variation key, reason, and the deciding rule/prerequisite.
+    breaking: false
+  - date: '2026-07-25'
+    title: Terraform provider on the Registry
+    highlights: >-
+      canopy-labs/featureflip published at v0.1.0; projects, environments, flags,
+      variations, rules, segments and SDK keys are all resources.
+    breaking: false
+  - date: '2026-07-14'
+    title: OpenFeature providers for Node.js and .NET
+    highlights: >-
+      @featureflip/openfeature-node on npm and Featureflip.OpenFeature on NuGet.
+    breaking: false
+  - date: '2026-07-10'
+    title: Manage flags from Claude Code and Cursor (MCP server)
+    highlights: >-
+      @featureflip/mcp puts flag management inside any MCP-speaking editor/agent.
+    breaking: false
+  - date: '2026-07-09'
+    title: Management API, on every plan
+    highlights: >-
+      Everything the dashboard does, over REST at api.featureflip.io under
+      /api/v1, bearer-token authenticated, on every plan including free.
+    breaking: false

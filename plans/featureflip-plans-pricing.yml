@@ -1,0 +1,53 @@
+generated: '2026-09-13'
+method: searched
+source: https://featureflip.io/pricing/
+currency: USD
+billing_note: >-
+  Flat pricing, nothing metered. Annual billing gives a 20% discount (the second
+  price shown per tier). All paid tiers include percentage rollouts, targeting,
+  kill switches, 13 SDKs, the Management API, and the Terraform provider.
+plan_count: 4
+plans:
+  - name: Solo
+    price: 0
+    period: forever-free
+    limits:
+      projects: 1
+      flags_per_project: 10
+      environments: 2
+      team_members: 1
+      audit_log_retention_days: 7
+    support: Community
+  - name: Pro
+    price_monthly: 49
+    price_annual_monthly: 39
+    period: month
+    limits:
+      projects: 10
+      flags: unlimited
+      environments: 5
+      team_members: 10
+      audit_log_retention_days: 30
+    support: Email
+  - name: Business
+    price_monthly: 149
+    price_annual_monthly: 119
+    period: month
+    limits:
+      projects: 25
+      flags: unlimited
+      environments: unlimited
+      team_members: 25
+      audit_log_retention_days: 90
+    support: Priority
+  - name: Enterprise
+    price: custom
+    period: contact-sales
+    limits:
+      audit_log_retention_days: 365
+    features:
+      - On-premise deployment
+      - Custom data retention
+      - Guaranteed SLA
+      - SAML/SCIM single sign-on
+    support: Priority + SLA

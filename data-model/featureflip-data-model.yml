@@ -1,0 +1,77 @@
+generated: '2026-09-13'
+method: derived
+source: >-
+  Derived from the path hierarchy and $ref/schema graph in
+  openapi/featureflip-management-api.json and openapi/featureflip-evaluation-api.json.
+entities:
+  - name: Organization
+    id: slug-or-id
+    schema: OrganizationResponse
+  - name: Project
+    id: key-or-id
+    schema: ProjectResponse
+  - name: Environment
+    id: key-or-id
+    schema: PublicEnvironmentResponse
+  - name: FeatureFlag
+    id: key-or-id
+    schema: PublicFlagResponse
+    note: Marquee stale/dead classification via PublicFlagRemovalCandidate.
+  - name: Variation
+    id: guid
+    schema: PublicVariationResponse
+  - name: FlagEnvConfig
+    schema: PublicFlagEnvConfigResponse
+    note: Per-flag, per-environment default variation, strategy, targeting.
+  - name: TargetingRule
+    id: guid
+    schema: PublicTargetingRuleResponse
+  - name: Segment
+    id: key-or-id
+    schema: PublicSegmentResponse
+  - name: SdkKey
+    id: guid
+    schema: PublicSdkKeyResponse
+  - name: User
+    schema: MeResponse
+relationships:
+  - from: Organization
+    to: Project
+    type: has_many
+    via: path (/orgs/{org}/projects)
+  - from: Project
+    to: Environment
+    type: has_many
+    via: path (/projects/{project}/environments)
+  - from: Project
+    to: FeatureFlag
+    type: has_many
+    via: path (/projects/{project}/flags)
+  - from: Project
+    to: Segment
+    type: has_many
+    via: path (/projects/{project}/segments)
+  - from: FeatureFlag
+    to: Variation
+    type: has_many
+    via: path (/flags/{flag}/variations)
+  - from: FeatureFlag
+    to: FlagEnvConfig
+    type: has_many
+    via: path (/flags/{flag}/environments/{env})
+  - from: FlagEnvConfig
+    to: TargetingRule
+    type: has_many
+    via: path (/flags/{flag}/environments/{env}/rules)
+  - from: TargetingRule
+    to: Segment
+    type: belongs_to
+    via: condition reference (segment key)
+  - from: Environment
+    to: SdkKey
+    type: has_many
+    via: path (/environments/{env}/sdk-keys)
+  - from: FeatureFlag
+    to: FeatureFlag
+    type: has_one
+    via: prerequisite (PublicPrerequisiteDto — a flag gated on another flag's variation)

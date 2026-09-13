@@ -1,0 +1,56 @@
+generated: '2026-09-13'
+method: searched
+source: >-
+  https://featureflip.io/docs/management-api/errors/ enriched with the response
+  codes and PublicApiErrorEnvelope / ProblemDetails schemas from
+  openapi/featureflip-management-api.json and openapi/featureflip-evaluation-api.json.
+apis:
+  - name: Management API
+    envelope:
+      format: custom-stable
+      media_type: application/json
+      schema: PublicApiErrorEnvelope
+      required_fields: [error, message, docs_url]
+      optional_fields: [fields, retry_after, did_you_mean, next_actions]
+      note: >-
+        Stable snake_case machine codes; frozen wire keys; docs_url links to the
+        per-code remediation page.
+    error_codes:
+      - code: bad_request
+        status: 400
+        meaning: Malformed or unprocessable request
+      - code: validation_failed
+        status: 400
+        meaning: One or more fields failed validation (see fields[])
+      - code: unauthorized
+        status: 401
+        meaning: Missing, invalid, expired, or revoked token
+      - code: forbidden
+        status: 403
+        meaning: Token's role is insufficient
+      - code: not_found
+        status: 404
+        meaning: Resource doesn't exist or isn't visible (incl. project allowlist)
+      - code: method_not_allowed
+        status: 405
+        meaning: HTTP method not supported on this path
+      - code: idempotency_key_in_progress
+        status: 409
+        meaning: A same-key create is still in flight
+      - code: unsupported_media_type
+        status: 415
+        meaning: Content-Type was not application/json
+      - code: rate_limited
+        status: 429
+        meaning: Rate limit exceeded (see retry_after / Retry-After)
+      - code: internal_error
+        status: 500
+        meaning: Unexpected server error
+  - name: Evaluation API
+    envelope:
+      format: rfc9457
+      media_type: application/problem+json
+      schema: ProblemDetails
+      note: >-
+        The Evaluation API returns an RFC 7807/9457-style ProblemDetails object,
+        distinct from the Management API's custom envelope.

@@ -1,0 +1,143 @@
+generated: '2026-09-13'
+method: derived
+source: >-
+  Derived by binding each @featureflip/mcp tool to the backing Management API
+  operation(s) in openapi/featureflip-management-api.json. The Management spec
+  declares NO operationId on any operation, so REST operations are referenced by
+  METHOD + path. Bindings mapped by tool name + semantics against the docs
+  (https://featureflip.io/docs/integrations/mcp/).
+surfaces:
+  openapi: openapi/featureflip-management-api.json
+  graphql: null
+  mcp:
+    url: null
+    transport: local-stdio (npx -y @featureflip/mcp)
+    gated: true
+    note: >-
+      Live tool inputSchema requires running the local server with a bearer
+      token; mapped here by name + semantics, not by live introspection.
+coverage:
+  mcp_tools: 19
+  mapped_to_rest: 16
+  mcp_only: 3
+  rest_operations: 45
+  rest_only: 29
+crosswalk:
+  - tool: list_projects
+    category: read
+    rest: ["GET /api/v1/orgs/{org}/projects"]
+    binding: direct
+    confidence: high
+  - tool: list_environments
+    category: read
+    rest: ["GET /api/v1/orgs/{org}/projects/{project}/environments"]
+    binding: direct
+    confidence: high
+  - tool: list_segments
+    category: read
+    rest: ["GET /api/v1/orgs/{org}/projects/{project}/segments"]
+    binding: direct
+    confidence: high
+  - tool: get_segment
+    category: read
+    rest: ["GET /api/v1/orgs/{org}/projects/{project}/segments/{segment}"]
+    binding: direct
+    confidence: high
+  - tool: list_flags
+    category: read
+    rest: ["GET /api/v1/orgs/{org}/projects/{project}/flags"]
+    binding: direct
+    confidence: high
+  - tool: get_flag
+    category: read
+    rest: ["GET /api/v1/orgs/{org}/projects/{project}/flags/{flag}"]
+    binding: direct
+    confidence: high
+  - tool: flag_status
+    category: read
+    rest: ["GET /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments"]
+    binding: derived
+    confidence: medium
+    note: Returns the flag's resolved config across environments.
+  - tool: get_targeting
+    category: read
+    rest: ["GET /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}/targeting"]
+    binding: direct
+    confidence: high
+  - tool: find_stale_flags
+    category: read
+    rest: ["GET /api/v1/orgs/{org}/projects/{project}/flags/removal-candidates"]
+    binding: direct
+    confidence: high
+    note: The marquee dead-flag-cleanup surface; supports staleness=stale.
+  - tool: create_flag
+    category: write
+    rest: ["POST /api/v1/orgs/{org}/projects/{project}/flags"]
+    binding: direct
+    confidence: high
+  - tool: update_flag
+    category: write
+    rest: ["PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}"]
+    binding: direct
+    confidence: high
+  - tool: restore_flag
+    category: write
+    rest: ["POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/restore"]
+    binding: direct
+    confidence: high
+  - tool: delete_flag
+    category: destructive
+    rest: ["DELETE /api/v1/orgs/{org}/projects/{project}/flags/{flag}"]
+    binding: direct
+    confidence: high
+  - tool: archive_flag
+    category: destructive
+    rest: ["POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/archive"]
+    binding: direct
+    confidence: high
+  - tool: toggle_flag
+    category: destructive
+    rest: ["POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}/toggle"]
+    binding: direct
+    confidence: high
+  - tool: update_flag_environment_config
+    category: destructive
+    rest: ["PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}"]
+    binding: direct
+    confidence: high
+  - tool: update_targeting
+    category: destructive
+    rest:
+      - "PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}/targeting"
+      - "POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}/rules"
+      - "PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}/rules/{ruleId}"
+    binding: composite
+    confidence: medium
+    note: Replaces or edits targeting; backed by the targeting + rules operations.
+  - tool: manage_variation
+    category: destructive
+    rest:
+      - "POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations"
+      - "PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations/{variationId}"
+      - "DELETE /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations/{variationId}"
+    binding: composite
+    confidence: medium
+mcp_only:
+  - tool: wrap_feature
+    reason: >-
+      Agent-side helper that wraps a code path in a flag read; has no single
+      backing public REST operation.
+  - tool: flag_status
+    reason: >-
+      Convenience aggregation over the per-environment config; not a distinct
+      REST operation (mapped above with medium confidence).
+  - tool: find_stale_flags
+    reason: >-
+      Backed by the removal-candidates endpoint but exposed as a purpose-built
+      discovery tool.
+rest_only:
+  note: >-
+    29 Management API operations have no MCP tool, including the full
+    organizations, projects (create/update/delete), environments (CRUD),
+    SDK-keys (CRUD/revoke), segments (create/update/delete), individual
+    targeting-rule CRUD/reorder, and GET /api/v1/me.

@@ -1,0 +1,948 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "Featureflip Evaluation API",
+    "description": "High-performance feature flag evaluation service for SDKs",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "https://eval.featureflip.io",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/v1/client/evaluate": {
+      "post": {
+        "tags": [
+          "Client SDK"
+        ],
+        "summary": "Evaluates all client-visible feature flags for the given user context.",
+        "requestBody": {
+          "description": "The evaluation request containing user context attributes.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientEvaluateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientEvaluateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientEvaluateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns the evaluation results for all client-visible flags.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientEvaluateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client SDK key is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`."
+          }
+        }
+      }
+    },
+    "/v1/client/identify": {
+      "post": {
+        "tags": [
+          "Client SDK"
+        ],
+        "summary": "Re-identifies the user with a new context, for example after login.",
+        "description": "Re-evaluates all client-visible flags and returns the updated values. Also updates the\ncontext on any active SSE connections for this environment.",
+        "requestBody": {
+          "description": "The evaluation request containing the new user context attributes.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientEvaluateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientEvaluateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientEvaluateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns the re-evaluated results for all client-visible flags.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientEvaluateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client SDK key is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`."
+          }
+        }
+      }
+    },
+    "/v1/client/stream": {
+      "get": {
+        "tags": [
+          "Client SDK"
+        ],
+        "summary": "Opens a Server-Sent Events stream for real-time client flag updates.",
+        "description": "Auth is passed as an `?authorization=csk_...` query parameter because a browser\nEventSource cannot set headers. User context is passed as `?context=base64json`.",
+        "parameters": [
+          {
+            "name": "context",
+            "in": "query",
+            "description": "Base64-encoded JSON user context for flag evaluation.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE stream opened successfully."
+          },
+          "401": {
+            "description": "Client SDK key is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`."
+          }
+        }
+      }
+    },
+    "/v1/sdk/flags": {
+      "get": {
+        "tags": [
+          "Server SDK"
+        ],
+        "summary": "Retrieves all feature flags for the authenticated environment.",
+        "responses": {
+          "200": {
+            "description": "Returns the environment configuration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetFlagsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "SDK key is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`."
+          }
+        }
+      }
+    },
+    "/v1/sdk/flags/{key}": {
+      "get": {
+        "tags": [
+          "Server SDK"
+        ],
+        "summary": "Retrieves a specific feature flag by key.",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "The flag key to retrieve.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the flag configuration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "SDK key is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Flag with the specified key was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`."
+          }
+        }
+      }
+    },
+    "/v1/sdk/evaluate": {
+      "post": {
+        "tags": [
+          "Server SDK"
+        ],
+        "summary": "Evaluates a feature flag for the given context.",
+        "requestBody": {
+          "description": "The evaluation request containing flag key and context.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateFlagRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateFlagRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateFlagRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns the evaluation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluateFlagResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "SDK key is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Flag with the specified key was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/v1/sdk/events": {
+      "post": {
+        "tags": [
+          "Server SDK"
+        ],
+        "summary": "Records SDK events for analytics and debugging.",
+        "requestBody": {
+          "description": "Batch of events to record.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordEventsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordEventsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordEventsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Events were accepted for processing."
+          },
+          "401": {
+            "description": "SDK key is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sdk/stream": {
+      "get": {
+        "tags": [
+          "Server SDK"
+        ],
+        "summary": "Opens a Server-Sent Events stream for real-time flag updates.",
+        "responses": {
+          "200": {
+            "description": "SSE stream opened successfully."
+          },
+          "401": {
+            "description": "SDK key is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ClientEvaluateRequest": {
+        "required": [
+          "context"
+        ],
+        "type": "object",
+        "properties": {
+          "context": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ClientEvaluateResponse": {
+        "required": [
+          "flags"
+        ],
+        "type": "object",
+        "properties": {
+          "flags": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ClientFlagValue"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ClientFlagValue": {
+        "required": [
+          "reason",
+          "value",
+          "variation"
+        ],
+        "type": "object",
+        "properties": {
+          "value": { },
+          "variation": {
+            "type": "string",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "prerequisiteKey": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConditionDto": {
+        "required": [
+          "attribute",
+          "operator",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "attribute": {
+            "type": "string",
+            "nullable": true
+          },
+          "operator": {
+            "$ref": "#/components/schemas/ConditionOperator"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "negate": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConditionGroupDto": {
+        "required": [
+          "conditions",
+          "operator"
+        ],
+        "type": "object",
+        "properties": {
+          "operator": {
+            "$ref": "#/components/schemas/ConditionLogic"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConditionDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConditionLogic": {
+        "enum": [
+          "And",
+          "Or"
+        ],
+        "type": "string"
+      },
+      "ConditionOperator": {
+        "enum": [
+          "Equals",
+          "NotEquals",
+          "Contains",
+          "NotContains",
+          "StartsWith",
+          "EndsWith",
+          "In",
+          "NotIn",
+          "MatchesRegex",
+          "GreaterThan",
+          "LessThan",
+          "GreaterThanOrEqual",
+          "LessThanOrEqual",
+          "Before",
+          "After",
+          "SemverEquals",
+          "SemverGreaterThan",
+          "SemverGreaterThanOrEqual",
+          "SemverLessThan",
+          "SemverLessThanOrEqual"
+        ],
+        "type": "string"
+      },
+      "EvaluateFlagRequest": {
+        "required": [
+          "context",
+          "flagKey"
+        ],
+        "type": "object",
+        "properties": {
+          "flagKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "context": {
+            "$ref": "#/components/schemas/EvaluationContextDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EvaluateFlagResponse": {
+        "required": [
+          "key",
+          "reason",
+          "value",
+          "variation"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "variation": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": { },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "prerequisiteKey": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EvaluationContextDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "nullable": true
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FlagDto": {
+        "required": [
+          "enabled",
+          "fallthrough",
+          "key",
+          "offVariation",
+          "prerequisites",
+          "rules",
+          "type",
+          "variations",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "type": {
+            "$ref": "#/components/schemas/FlagType"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "variations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VariationDto"
+            },
+            "nullable": true
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleDto"
+            },
+            "nullable": true
+          },
+          "fallthrough": {
+            "$ref": "#/components/schemas/ServeConfigDto"
+          },
+          "offVariation": {
+            "type": "string",
+            "nullable": true
+          },
+          "prerequisites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrerequisiteDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FlagType": {
+        "enum": [
+          "Boolean",
+          "String",
+          "Number",
+          "Json"
+        ],
+        "type": "string"
+      },
+      "GetFlagsResponse": {
+        "required": [
+          "environment",
+          "flags",
+          "segments",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "environment": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlagDto"
+            },
+            "nullable": true
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SegmentDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrerequisiteDto": {
+        "required": [
+          "expectedVariationKey",
+          "prerequisiteFlagKey"
+        ],
+        "type": "object",
+        "properties": {
+          "prerequisiteFlagKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "expectedVariationKey": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": { }
+      },
+      "RecordEventsRequest": {
+        "required": [
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkEventDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RuleDto": {
+        "required": [
+          "conditionGroups",
+          "id",
+          "priority",
+          "serve"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "conditionGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConditionGroupDto"
+            },
+            "nullable": true
+          },
+          "serve": {
+            "$ref": "#/components/schemas/ServeConfigDto"
+          },
+          "segmentKey": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SdkEventDto": {
+        "required": [
+          "flagKey",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/SdkEventType"
+          },
+          "flagKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true
+          },
+          "variation": {
+            "type": "string",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
+          },
+          "prerequisiteKey": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SdkEventType": {
+        "enum": [
+          "Evaluation",
+          "Impression",
+          "Identify",
+          "Custom"
+        ],
+        "type": "string"
+      },
+      "SegmentDto": {
+        "required": [
+          "conditionLogic",
+          "conditions",
+          "key",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConditionDto"
+            },
+            "nullable": true
+          },
+          "conditionLogic": {
+            "$ref": "#/components/schemas/ConditionLogic"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ServeConfigDto": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ServeType"
+          },
+          "variation": {
+            "type": "string",
+            "nullable": true
+          },
+          "bucketBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "salt": {
+            "type": "string",
+            "nullable": true
+          },
+          "variations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeightedVariationDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ServeType": {
+        "enum": [
+          "Fixed",
+          "Rollout"
+        ],
+        "type": "string"
+      },
+      "VariationDto": {
+        "required": [
+          "key",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": { }
+        },
+        "additionalProperties": false
+      },
+      "WeightedVariationDto": {
+        "required": [
+          "key",
+          "weight"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "weight": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "apiKey",
+        "description": "SDK Key authorization. Enter your SDK key.",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  },
+  "security": [
+    {
+      "Bearer": [ ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Client SDK",
+      "description": "Client SDK endpoints for browser-side feature flag evaluation.\nAll endpoints require a valid Client SDK key passed via the Authorization header.\nUnlike server SDK endpoints, these evaluate flags server-side and return only values."
+    },
+    {
+      "name": "Server SDK",
+      "description": "SDK endpoints for feature flag evaluation and configuration retrieval.\nAll endpoints require a valid SDK key passed via the Authorization header."
+    }
+  ]
+}

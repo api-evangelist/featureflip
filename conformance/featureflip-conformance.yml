@@ -1,0 +1,45 @@
+generated: '2026-09-13'
+method: searched
+source: >-
+  https://featureflip.io/docs/integrations/openfeature/ , the OpenFeature
+  provider packages, and derivation from the OpenAPI contracts + conventions docs.
+notes: >-
+  OpenFeature is the domain standard for this market (CNCF vendor-neutral feature
+  flag API). Featureflip ships conformant OpenFeature providers for 5 runtimes,
+  which is the reward-bearing domain-standard signal for a feature-flag provider.
+conformance:
+  - id: openfeature
+    conforms: true
+    kind: domain-standard
+    evidence: >-
+      Published OpenFeature providers: @featureflip/openfeature-node (npm),
+      Featureflip.OpenFeature (NuGet), featureflip-openfeature-provider (PyPI),
+      github.com/canopy-labs/featureflip-go-openfeature, and
+      io.featureflip:featureflip-openfeature (Maven). Docs:
+      https://featureflip.io/docs/integrations/openfeature/
+  - id: rfc9457
+    conforms: true
+    evidence: >-
+      Evaluation API returns application/problem+json (ProblemDetails schema) in
+      openapi/featureflip-evaluation-api.json. The Management API uses a custom
+      stable envelope instead.
+  - id: idempotency
+    conforms: true
+    evidence: >-
+      Idempotency-Key header on all create (POST) operations; 409
+      idempotency_key_in_progress on concurrent same-key requests
+      (docs/management-api/conventions/).
+  - id: pagination
+    conforms: true
+    evidence: >-
+      Cursor-based pagination (cursor param, items[] + next_cursor) across all
+      Management API list endpoints.
+  - id: oauth2
+    conforms: false
+    evidence: >-
+      Authentication is bearer API tokens (apiKey scheme), not OAuth2/OIDC.
+  - id: scim
+    conforms: partial
+    evidence: >-
+      SCIM (with SAML) is offered on the Enterprise plan per the pricing/security
+      pages; no public SCIM schema/endpoint is exposed in the OpenAPI contracts.

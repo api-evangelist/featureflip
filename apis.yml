@@ -2,10 +2,10 @@ name: Featureflip
 description: >-
   Feature flag platform with automated dead-flag cleanup (via a GitHub Action), flat pricing, and API-first,
   agent-native surfaces. Exposes a Management REST API and a high-performance Evaluation API, both with public OpenAPI
-  contracts, plus SDKs for many languages.
+  contracts, plus official SDKs for 13 languages, OpenFeature providers, a Terraform provider, and a local MCP server.
 url: https://raw.githubusercontent.com/api-evangelist/featureflip/refs/heads/main/apis.yml
 created: '2026-09-12'
-modified: '2026-09-12'
+modified: '2026-09-13'
 specificationVersion: '0.21'
 tags:
   - feature flags
@@ -39,6 +39,12 @@ apis:
     properties:
       - type: OpenAPI
         url: https://featureflip.io/openapi/public-v1.json
+      - type: OpenAPI
+        url: openapi/featureflip-management-api.json
+      - type: Overlay
+        url: overlays/featureflip-management-overlay.yaml
+      - type: APIReference
+        url: https://featureflip.io/docs/management-api/reference/
       - type: Documentation
         url: https://featureflip.io/docs/management-api/reference/
       - type: Documentation
@@ -65,6 +71,12 @@ apis:
     properties:
       - type: OpenAPI
         url: https://featureflip.io/openapi/evaluation-v1.json
+      - type: OpenAPI
+        url: openapi/featureflip-evaluation-api.json
+      - type: Overlay
+        url: overlays/featureflip-evaluation-overlay.yaml
+      - type: APIReference
+        url: https://featureflip.io/docs/api/reference/
       - type: Documentation
         url: https://featureflip.io/docs/api/reference/
   - name: MCP Server (local)
@@ -87,11 +99,74 @@ apis:
     properties:
       - type: Documentation
         url: https://featureflip.io/docs/integrations/mcp/
+      - type: MCPServer
+        url: mcp/featureflip-mcp.yml
+      - type: ToolCrosswalk
+        url: mcp/featureflip-tool-crosswalk.yml
 maintainers:
   - FN: Featureflip
+    email: contact@featureflip.io
     url: https://featureflip.io/
 generated:
   by: apis.io/add
   model: claude-opus-4-8
   confidence: 97
   at: '2026-09-12T04:54:28.200Z'
+common:
+- type: Website
+  url: https://featureflip.io/
+- type: Authentication
+  url: authentication/featureflip-authentication.yml
+- type: DomainSecurity
+  url: security/featureflip-domain-security.yml
+- type: Packages
+  url: packages/featureflip-packages.yml
+- type: SDKs
+  url: packages/featureflip-packages.yml
+- type: Conventions
+  url: conventions/featureflip-conventions.yml
+- type: Idempotency
+  url: conventions/featureflip-conventions.yml
+- type: RateLimits
+  url: rate-limits/featureflip-rate-limits.yml
+- type: Plans
+  url: plans/featureflip-plans-pricing.yml
+- type: ChangeLog
+  url: changelog/featureflip-changelog.yml
+- type: Lifecycle
+  url: lifecycle/featureflip-lifecycle.yml
+- type: ErrorCatalog
+  url: errors/featureflip-problem-types.yml
+- type: DataModel
+  url: data-model/featureflip-data-model.yml
+- type: Conformance
+  url: conformance/featureflip-conformance.yml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: Rules
+  url: rules/featureflip-spectral.yaml
+- type: Documentation
+  url: https://featureflip.io/docs/
+- type: DeveloperPortal
+  url: https://featureflip.io/docs/
+- type: GettingStarted
+  url: https://featureflip.io/docs/quickstart/javascript/
+- type: Pricing
+  url: https://featureflip.io/pricing/
+- type: Blog
+  url: https://featureflip.io/blog/
+- type: Support
+  url: https://featureflip.io/contact/
+- type: SignUp
+  url: https://app.featureflip.io/signup
+- type: GitHubOrganization
+  url: https://github.com/canopy-labs
+- type: TermsOfService
+  url: https://featureflip.io/terms/
+- type: PrivacyPolicy
+  url: https://featureflip.io/privacy/
+x-enrichment:
+  date: '2026-09-13'
+  status: enriched
+  artifacts_added: 24
+  pass: local-v3

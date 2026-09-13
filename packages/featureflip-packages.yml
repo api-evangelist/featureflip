@@ -1,0 +1,226 @@
+generated: '2026-09-13'
+method: searched
+source: >-
+  npm registry.npmjs.org, PyPI, RubyGems, NuGet, Go module proxy, the Terraform
+  Registry, the canopy-labs GitHub org, and the Featureflip SDK/integration docs
+  (https://featureflip.io/docs/sdks/overview/). All packages are first-party,
+  published by Featureflip (GitHub org: canopy-labs).
+notes: >-
+  Featureflip ships official SDKs for 13 languages/frameworks plus OpenFeature
+  providers for 5 runtimes, a local MCP server, a Terraform provider, and a
+  GitHub Action for dead-flag cleanup. Version/date confirmed from each registry
+  metadata endpoint where one answered; Maven Central artifacts (io.featureflip)
+  are named by the provider changelog but did not resolve via search.maven.org at
+  probe time, so their versions are recorded null with a note. The base .NET SDK
+  NuGet id did not resolve on the flat-container endpoint and is recorded from its
+  source repo with version null.
+packages:
+  # --- Server SDKs ---
+  - name: "@featureflip/node"
+    ecosystem: npm
+    registry: npm
+    url: https://www.npmjs.com/package/@featureflip/node
+    official: true
+    language: JavaScript/TypeScript
+    role: server-sdk
+    version: 2.9.0
+    published: '2026-09-08'
+  - name: "@featureflip/js"
+    ecosystem: npm
+    registry: npm
+    url: https://www.npmjs.com/package/@featureflip/js
+    official: true
+    language: JavaScript/TypeScript
+    role: server-sdk
+    version: 2.9.0
+    published: '2026-09-08'
+  - name: featureflip
+    ecosystem: pypi
+    registry: pypi
+    url: https://pypi.org/project/featureflip/
+    official: true
+    language: Python
+    role: server-sdk
+    version: 2.7.0
+    published: '2026-08-29'
+  - name: featureflip
+    ecosystem: rubygems
+    registry: rubygems
+    url: https://rubygems.org/gems/featureflip
+    official: true
+    language: Ruby
+    role: server-sdk
+    version: 2.8.0
+    published: null
+    note: >-
+      RubyGems reports latest version 2.8.0; the gems endpoint did not return an
+      upload date at probe time.
+  - name: github.com/canopy-labs/featureflip-go
+    ecosystem: go
+    registry: go
+    url: https://pkg.go.dev/github.com/canopy-labs/featureflip-go
+    official: true
+    language: Go
+    role: server-sdk
+    version: v1.0.1
+    published: '2026-04-03'
+  - name: io.featureflip:featureflip-java
+    ecosystem: maven
+    registry: maven
+    url: https://github.com/canopy-labs/featureflip-java
+    official: true
+    language: Java
+    role: server-sdk
+    version: null
+    note: >-
+      Java SDK source at canopy-labs/featureflip-java; the changelog names
+      io.featureflip on Maven Central but the artifact did not resolve via
+      search.maven.org at probe time.
+  - name: Featureflip (.NET)
+    ecosystem: nuget
+    registry: nuget
+    url: https://github.com/canopy-labs/featureflip-dotnet
+    official: true
+    language: C#/.NET
+    role: server-sdk
+    version: null
+    note: >-
+      .NET SDK source at canopy-labs/featureflip-dotnet; the base NuGet package id
+      did not resolve on the flat-container endpoint at probe time.
+  - name: featureflip-php
+    ecosystem: composer
+    registry: github
+    url: https://github.com/canopy-labs/featureflip-php
+    official: true
+    language: PHP
+    role: server-sdk
+    version: null
+    note: PHP SDK source repo; no Packagist entry confirmed at probe time.
+  # --- Client SDKs ---
+  - name: "@featureflip/browser"
+    ecosystem: npm
+    registry: npm
+    url: https://www.npmjs.com/package/@featureflip/browser
+    official: true
+    language: JavaScript/TypeScript
+    role: client-sdk
+    version: 2.9.0
+    published: '2026-09-08'
+  - name: "@featureflip/react"
+    ecosystem: npm
+    registry: npm
+    url: https://www.npmjs.com/package/@featureflip/react
+    official: true
+    language: JavaScript/TypeScript
+    role: client-sdk
+    version: 2.9.0
+    published: '2026-09-08'
+  - name: featureflip-swift
+    ecosystem: swiftpm
+    registry: github
+    url: https://github.com/canopy-labs/featureflip-swift
+    official: true
+    language: Swift
+    role: client-sdk
+    version: null
+    note: Swift Package Manager SDK source repo.
+  - name: featureflip-flutter
+    ecosystem: pub
+    registry: github
+    url: https://github.com/canopy-labs/featureflip-flutter
+    official: true
+    language: Dart/Flutter
+    role: client-sdk
+    version: null
+    note: Flutter SDK source repo; pub.dev version not confirmed at probe time.
+  - name: featureflip-android
+    ecosystem: maven
+    registry: github
+    url: https://github.com/canopy-labs/featureflip-android
+    official: true
+    language: Kotlin/Android
+    role: client-sdk
+    version: null
+    note: Android/Kotlin SDK source repo.
+  # --- OpenFeature providers ---
+  - name: "@featureflip/openfeature-node"
+    ecosystem: npm
+    registry: npm
+    url: https://www.npmjs.com/package/@featureflip/openfeature-node
+    official: true
+    language: JavaScript/TypeScript
+    role: openfeature-provider
+    version: 0.2.1
+    published: '2026-08-05'
+  - name: Featureflip.OpenFeature
+    ecosystem: nuget
+    registry: nuget
+    url: https://www.nuget.org/packages/Featureflip.OpenFeature
+    official: true
+    language: C#/.NET
+    role: openfeature-provider
+    version: 0.3.1
+    published: null
+    note: NuGet flat-container reports latest 0.3.1; publish date not captured.
+  - name: featureflip-openfeature-provider
+    ecosystem: pypi
+    registry: pypi
+    url: https://pypi.org/project/featureflip-openfeature-provider/
+    official: true
+    language: Python
+    role: openfeature-provider
+    version: 0.1.1
+    published: '2026-08-29'
+  - name: github.com/canopy-labs/featureflip-go-openfeature
+    ecosystem: go
+    registry: go
+    url: https://pkg.go.dev/github.com/canopy-labs/featureflip-go-openfeature
+    official: true
+    language: Go
+    role: openfeature-provider
+    version: v0.2.0
+    published: '2026-09-06'
+  - name: io.featureflip:featureflip-openfeature
+    ecosystem: maven
+    registry: maven
+    url: https://github.com/canopy-labs/featureflip-java-openfeature
+    official: true
+    language: Java
+    role: openfeature-provider
+    version: null
+    note: >-
+      Named io.featureflip:featureflip-openfeature on Maven Central in the
+      provider changelog; did not resolve via search.maven.org at probe time.
+  # --- Tooling ---
+  - name: "@featureflip/mcp"
+    ecosystem: npm
+    registry: npm
+    url: https://www.npmjs.com/package/@featureflip/mcp
+    official: true
+    language: JavaScript/TypeScript
+    role: mcp-server
+    version: 0.1.4
+    published: '2026-08-28'
+    note: Local stdio MCP server (run via npx). See mcp/featureflip-mcp.yml.
+  - name: canopy-labs/featureflip
+    ecosystem: terraform
+    registry: terraform
+    url: https://registry.terraform.io/providers/canopy-labs/featureflip
+    official: true
+    language: HCL/Go
+    role: terraform-provider
+    version: 0.1.0
+    published: '2026-07-25'
+    note: Source at github.com/canopy-labs/terraform-provider-featureflip.
+  - name: featureflip/flag-cleanup-action
+    ecosystem: github-actions
+    registry: github
+    url: https://github.com/canopy-labs/featureflip-flag-cleanup-action
+    official: true
+    language: Python
+    role: github-action
+    version: v1.0.0
+    published: '2026-09-10'
+    note: >-
+      GitHub Action that reads removal candidates from the Management API and
+      opens one pull request per dead flag, removing the code path in 13 languages.

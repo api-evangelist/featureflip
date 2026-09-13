@@ -1,0 +1,99 @@
+generated: '2026-09-13'
+method: searched
+source: >-
+  https://featureflip.io/docs/management-api/conventions/ plus derivation from
+  openapi/featureflip-management-api.json (headers, response codes, schemas).
+api: Management API
+auth:
+  style: bearer-token
+  header: "Authorization: Bearer <token>"
+  token_types:
+    - prefix: ffp_
+      kind: Personal Access Token (individual identity across all orgs)
+    - prefix: ffs_
+      kind: Service Token (machine identity, single org, explicit role)
+  roles: [Owner, Admin, Member, Viewer]
+  see: authentication/featureflip-authentication.yml
+versioning:
+  scheme: url-prefix
+  current: v1
+  path_prefix: /api/v1
+  policy: >-
+    Breaking changes get a new version prefix; additive changes happen within v1.
+resource_addressing:
+  top_level: key-or-slug (orgs, projects, flags, environments, segments)
+  nested: GUID (targeting rules, variations)
+pagination:
+  style: cursor
+  request_param: cursor
+  response_fields:
+    items: array of results
+    next_cursor: opaque string, null when no more pages
+error_envelope:
+  shape: custom-stable (frozen snake_case keys)
+  required_fields: [error, message, docs_url]
+  optional_fields: [fields, retry_after, did_you_mean, next_actions]
+  codes_are: stable snake_case strings
+  see: errors/featureflip-problem-types.yml
+  note: >-
+    The Evaluation API uses a separate ProblemDetails (RFC 7807 / 9457-style)
+    envelope; the Management API uses this custom frozen envelope.
+rate_limiting:
+  response_headers: [X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset]
+  reset_format: Unix timestamp in seconds
+  exhaustion_status: 429
+  exhaustion_code: rate_limited
+  retry_signal: [retry_after (body), Retry-After (header)]
+  see: rate-limits/featureflip-rate-limits.yml
+hypermedia:
+  mechanism: _actions object on resources
+  shape: '{ "<action>": { "allowed": <bool>, "reason": <string?> } }'
+  also: error envelope next_actions[] carries {method, path} follow-ups
+idempotency:
+  coverage: full
+  header: Idempotency-Key
+  applies_to: all POST operations that create resources
+  value: unique per request (e.g. UUID)
+  replay: retried requests with a matching key replay the original result
+  in_flight_conflict: 409 idempotency_key_in_progress
+  note: >-
+    PUT operations are declarative full replaces (naturally idempotent) and
+    DELETE is idempotent, so the Idempotency-Key header covers the only
+    non-idempotent part of the mutating surface (creates). Marked full on that
+    basis.
+reversibility:
+  grade: documented
+  surfaces:
+    - operation: archive flag
+      rest: "POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/archive"
+      reversal: restore flag
+      reversal_rest: "POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/restore"
+      window: null
+      window_note: >-
+        Docs describe restore as "Restores a previously archived flag" with no
+        stated time limit; no explicit window is published, so graded documented
+        rather than verified.
+      docs: https://featureflip.io/docs/management-api/reference/
+    - operation: scheduled change
+      reversal: cancel pending change
+      window: before it applies
+      window_note: A pending scheduled change can be cancelled any time before it runs.
+      docs: https://featureflip.io/product/features/scheduled-changes/
+    - operation: delete flag
+      rest: "DELETE /api/v1/orgs/{org}/projects/{project}/flags/{flag}"
+      reversal: null
+      window: null
+      window_note: >-
+        Deletion is permanent (distinct from archive). Recreating a flag assigns
+        a new bucketing salt, so it is not a restore.
+    - operation: revoke SDK key
+      rest: "POST .../environments/{env}/sdk-keys/{sdkKey}/revoke"
+      reversal: null
+      window: null
+      window_note: Revocation is immediate and permanent.
+  note: >-
+    Archive/restore is the primary reversible path and is what the cleanup Action
+    relies on; delete and revoke are intentionally irreversible.
+field_expansion: none documented
+metadata: flag tags; segments; per-environment config
+request_id_tracing: not documented

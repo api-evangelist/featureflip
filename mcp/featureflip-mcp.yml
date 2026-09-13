@@ -1,0 +1,66 @@
+generated: '2026-09-13'
+method: searched
+source: >-
+  https://featureflip.io/docs/integrations/mcp/ and the published npm package
+  @featureflip/mcp (registry.npmjs.org, latest 0.1.4 @ 2026-08-28).
+name: Featureflip MCP Server
+description: >-
+  Local Model Context Protocol server that lets AI agents (Claude Code, Cursor,
+  etc.) manage Featureflip flags by calling the Management API on the caller's
+  behalf. It manages flag configuration; it does not evaluate flags at runtime.
+deployment:
+  mode: local-stdio
+  endpoint: null
+  install: "npx -y @featureflip/mcp"
+  package: https://www.npmjs.com/package/@featureflip/mcp
+  auth: api-key
+  verified: searched
+  note: >-
+    Runs as a local process over stdio via npx; there is NO hosted/remote MCP
+    endpoint an agent can POST to. Authenticates with the FEATUREFLIP_TOKEN
+    environment variable (a Personal ffp_ or Service ffs_ bearer token).
+tools:
+  # Read-only
+  - name: list_projects
+    category: read
+  - name: list_environments
+    category: read
+  - name: list_segments
+    category: read
+  - name: get_segment
+    category: read
+  - name: list_flags
+    category: read
+  - name: get_flag
+    category: read
+  - name: flag_status
+    category: read
+  - name: get_targeting
+    category: read
+  - name: find_stale_flags
+    category: read
+    note: Surfaces confidently-dead / stale removal candidates.
+  # Non-destructive writes
+  - name: create_flag
+    category: write
+  - name: update_flag
+    category: write
+  - name: restore_flag
+    category: write
+  - name: wrap_feature
+    category: write
+  # Destructive
+  - name: delete_flag
+    category: destructive
+  - name: archive_flag
+    category: destructive
+  - name: toggle_flag
+    category: destructive
+  - name: update_flag_environment_config
+    category: destructive
+  - name: update_targeting
+    category: destructive
+  - name: manage_variation
+    category: destructive
+tool_count: 19
+backing_api: Management API (https://api.featureflip.io)

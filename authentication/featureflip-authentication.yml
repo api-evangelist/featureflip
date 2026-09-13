@@ -1,0 +1,48 @@
+generated: '2026-09-13'
+method: searched
+source: >-
+  https://featureflip.io/docs/management-api/authentication/ enriched over the
+  securityScheme derived from openapi/featureflip-management-api.json and
+  openapi/featureflip-evaluation-api.json.
+summary:
+  types:
+    - apiKey
+  api_key_in:
+    - header
+  oauth2: false
+  note: Bearer token in the Authorization header; no OAuth2/OIDC.
+schemes:
+  - name: Bearer
+    type: apiKey
+    in: header
+    parameter: Authorization
+    format: "Bearer <token>"
+    sources:
+      - openapi/featureflip-evaluation-api.json
+      - openapi/featureflip-management-api.json
+management_api:
+  token_types:
+    - prefix: ffp_
+      name: Personal Access Token
+      identity: Individual user across all organizations they belong to
+      created_in: Settings -> API Tokens -> Personal Access Tokens
+    - prefix: ffs_
+      name: Service Token
+      identity: Machine identity scoped to a single organization with an explicit role
+      created_in: Organization Settings -> Service Tokens
+      features: [project allowlist, optional expiry, immediate revocation]
+  roles:
+    - Owner    # full access incl. org settings
+    - Admin    # project, flag, and member management
+    - Member   # flag create/edit, targeting, segments
+    - Viewer   # read-only
+  failure:
+    insufficient_role: 403 forbidden
+    excluded_project: 404 not_found  # service token project allowlist
+    missing_malformed_expired_revoked: 401 unauthorized
+evaluation_api:
+  auth: 'SDK key sent as "Authorization: Bearer <sdk-key>"'
+  scope: Per-environment. A client SDK key returns only client-side-visible flags as pre-evaluated values; a server SDK key sees every flag in the project.
+account_security:
+  two_factor: TOTP authenticator app + recovery codes (all plans)
+  sso: Sign in with Google (all plans); SAML/SCIM on Enterprise
