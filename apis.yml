@@ -8,6 +8,17 @@ created: '2026-09-12'
 modified: '2026-09-13'
 specificationVersion: '0.21'
 tags:
+  - Feature Flags
+  - Feature Management
+  - feature flag cleanup
+  - Progressive Delivery
+  - Experimentation
+  - feature flags as code
+  - OpenFeature
+  - MCP
+  - Developer Tools
+  - DevOps/CI-CD
+tags_raw:
   - feature flags
   - feature management
   - feature flag cleanup
@@ -19,90 +30,454 @@ tags:
   - developer tools
   - DevOps/CI-CD
 apis:
-  - name: Management API
-    description: >-
-      Programmatic access to Featureflip — projects, environments, feature flags, variations, targeting, segments, and
-      SDK keys. Bearer-token auth (ffp_ personal / ffs_ service tokens).
-    humanURL: https://featureflip.io/docs/management-api/overview/
-    baseURL: https://api.featureflip.io
-    tags:
-      - feature flags
-      - feature management
-      - feature flag cleanup
-      - progressive delivery
-      - experimentation
-      - feature flags as code
-      - OpenFeature
-      - MCP
-      - developer tools
-      - DevOps/CI-CD
-    properties:
-      - type: OpenAPI
-        url: https://featureflip.io/openapi/public-v1.json
-      - type: OpenAPI
-        url: openapi/featureflip-management-api.json
-      - type: Overlay
-        url: overlays/featureflip-management-overlay.yaml
-      - type: APIReference
-        url: https://featureflip.io/docs/management-api/reference/
-      - type: Documentation
-        url: https://featureflip.io/docs/management-api/reference/
-      - type: Documentation
-        url: https://featureflip.io/docs/management-api/authentication/
-      - type: LLMsTxt
-        url: https://featureflip.io/llms.txt
-  - name: Evaluation API
-    description: >-
-      High-performance feature flag evaluation service for SDKs, with client and SDK endpoints for evaluation, identify,
-      streaming, flags, and events.
-    humanURL: https://featureflip.io/docs/api/overview/
-    baseURL: https://eval.featureflip.io
-    tags:
-      - feature flags
-      - feature management
-      - feature flag cleanup
-      - progressive delivery
-      - experimentation
-      - feature flags as code
-      - OpenFeature
-      - MCP
-      - developer tools
-      - DevOps/CI-CD
-    properties:
-      - type: OpenAPI
-        url: https://featureflip.io/openapi/evaluation-v1.json
-      - type: OpenAPI
-        url: openapi/featureflip-evaluation-api.json
-      - type: Overlay
-        url: overlays/featureflip-evaluation-overlay.yaml
-      - type: APIReference
-        url: https://featureflip.io/docs/api/reference/
-      - type: Documentation
-        url: https://featureflip.io/docs/api/reference/
-  - name: MCP Server (local)
-    description: >-
-      Documentation for the @featureflip/mcp server, a local stdio process run via npx that calls the Management API on
-      your behalf using a bearer token.
-    humanURL: https://featureflip.io/docs/integrations/mcp/
-    baseURL: https://featureflip.io/docs/integrations/mcp/
-    tags:
-      - feature flags
-      - feature management
-      - feature flag cleanup
-      - progressive delivery
-      - experimentation
-      - feature flags as code
-      - OpenFeature
-      - MCP
-      - developer tools
-      - DevOps/CI-CD
-    properties:
-      - type: Documentation
-        url: https://featureflip.io/docs/integrations/mcp/
-      - type: MCPServer
-        url: mcp/featureflip-mcp.yml
-      - type: ToolCrosswalk
-        url: mcp/featureflip-tool-crosswalk.yml
+- name: MCP Server (local)
+  description: >-
+    Documentation for the @featureflip/mcp server, a local stdio process run via npx that calls the Management
+    API on your behalf using a bearer token.
+  humanURL: https://featureflip.io/docs/integrations/mcp/
+  baseURL: https://featureflip.io/docs/integrations/mcp/
+  tags:
+  - Feature Flags
+  - Feature Management
+  - feature flag cleanup
+  - Progressive Delivery
+  - Experimentation
+  - feature flags as code
+  - OpenFeature
+  - MCP
+  - Developer Tools
+  - DevOps/CI-CD
+  tags_raw:
+  - feature flags
+  - feature management
+  - feature flag cleanup
+  - progressive delivery
+  - experimentation
+  - feature flags as code
+  - OpenFeature
+  - MCP
+  - developer tools
+  - DevOps/CI-CD
+  properties:
+  - type: Documentation
+    url: https://featureflip.io/docs/integrations/mcp/
+  - type: MCPServer
+    url: mcp/featureflip-mcp.yml
+  - type: ToolCrosswalk
+    url: mcp/featureflip-tool-crosswalk.yml
+- aid: featureflip:featureflip-client-sdk-api
+  name: Featureflip Client SDK API
+  description: >-
+    Client SDK endpoints for browser-side feature flag evaluation.
+
+    All endpoints require a valid Client SDK key passed via the Authorization header.
+
+    Unlike server SDK endpoints, these evaluate flags server-side and return only values.
+  humanURL: https://featureflip.io/docs/management-api/overview/
+  baseURL: https://api.featureflip.io
+  tags:
+  - Client SDK
+  properties:
+  - type: OpenAPI
+    url: openapi/featureflip-client-sdk-api-openapi.yml
+  - type: APIReference
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/authentication/
+  - type: LLMsTxt
+    url: https://featureflip.io/llms.txt
+  - type: APIReference
+    url: https://featureflip.io/docs/api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/api/reference/
+- aid: featureflip:featureflip-environments-api
+  name: Featureflip Environments API
+  description: >-
+    Environments within a resolved organization + project — one level deeper than
+
+    ProjectsController. Every route here carries `{org}`, so
+
+    ResolveTenantFilter has already resolved + access-checked
+
+    it before any action runs. `{project}` is resolved key-or-guid, scoped to the resolved
+
+    org, via ResolveProjectIdAsync for every action (list
+
+    needs it too, unlike ProjectsController's org-only list). `{env}`
+
+    (get/update/delete) is then resolved key-or-guid, scoped to the resolved project, via
+
+    ResolveEnvironmentIdAsync. Dispatched commands/queries
+
+    always use the resolved GUIDs, never the raw route strings. Writes (create/update/delete)
+
+    require at least Member (RequireRole);
+
+    a Viewer attempting one gets a 403 `forbidden` envelope. Deleting a project's last
+
+    environment surfaces the existing `LAST_ENVIRONMENT` guard
+
+    (DeleteEnvironmentCommandHandler) as-is — it throws the custom
+
+    ValidationException, which
+
+    PublicApiExceptionFilterAttribute maps to a 400
+
+    `validation_failed` envelope automatically, so Delete doesn't special-case it.
+
+    ListEnvironmentsQuery has no `Skip`/`Take` (unlike
+
+    `ListProjectsQuery`) — a project's environment count is small, so List
+
+    fetches the full set and paginates in-memory to still expose the standard cursor contract.
+  humanURL: https://featureflip.io/docs/management-api/overview/
+  baseURL: https://api.featureflip.io
+  tags:
+  - Environments
+  properties:
+  - type: OpenAPI
+    url: openapi/featureflip-environments-api-openapi.yml
+  - type: APIReference
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/authentication/
+  - type: LLMsTxt
+    url: https://featureflip.io/llms.txt
+  - type: APIReference
+    url: https://featureflip.io/docs/api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/api/reference/
+- aid: featureflip:featureflip-feature-flags-api
+  name: Featureflip Feature Flags API
+  description: >-
+    Feature flags within a resolved organization + project — mirrors
+
+    EnvironmentsController's resolve-then-dispatch shape one level deeper.
+
+    `{project}` is resolved key-or-guid, scoped to the resolved org (with the service-token
+
+    project allowlist forwarded), via ResolveProjectIdAsync
+
+    for every action. `{flag}` (get/update/archive/restore/delete) is then resolved
+
+    key-or-guid, scoped to the resolved project, via
+
+    ResolveFlagIdAsync. Dispatched commands/queries always
+
+    use the resolved GUIDs, never the raw route strings. Writes (create/update/archive/restore/
+
+    delete) require at least Member
+
+    (RequireRole); a Viewer attempting one gets a 403
+
+    `forbidden` envelope. Flag deletion/variation-removal guards (`FLAG_HAS_DEPENDENTS`,
+
+    plan limits on create, etc.) surface as-is via the existing handlers' custom
+
+    ValidationException, which
+
+    PublicApiExceptionFilterAttribute maps to a 400 `validation_failed`
+
+    envelope automatically — no action here special-cases them. Defers flag *runtime config*
+
+    (env-config, toggle, targeting rules, prerequisites) and variations to their own controllers
+
+    (phase 3b Task 3 / phase 3c).
+  humanURL: https://featureflip.io/docs/management-api/overview/
+  baseURL: https://api.featureflip.io
+  tags:
+  - Feature Flags
+  properties:
+  - type: OpenAPI
+    url: openapi/featureflip-feature-flags-api-openapi.yml
+  - type: APIReference
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/authentication/
+  - type: LLMsTxt
+    url: https://featureflip.io/llms.txt
+  - type: APIReference
+    url: https://featureflip.io/docs/api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/api/reference/
+- aid: featureflip:featureflip-me-api
+  name: Featureflip Me API
+  description: >-
+    The caller's own identity. This route has no `{org}` segment, so
+
+    ResolveTenantFilter is a pass-through here — the caller
+
+    is read entirely from the authenticated principal (via GetCurrentUserQuery for a
+
+    user/PAT, or directly from claims for a service token), never from
+
+    ResolvedOrgId.
+  humanURL: https://featureflip.io/docs/management-api/overview/
+  baseURL: https://api.featureflip.io
+  tags:
+  - Me
+  properties:
+  - type: OpenAPI
+    url: openapi/featureflip-me-api-openapi.yml
+  - type: APIReference
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/authentication/
+  - type: LLMsTxt
+    url: https://featureflip.io/llms.txt
+  - type: APIReference
+    url: https://featureflip.io/docs/api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/api/reference/
+- aid: featureflip:featureflip-organizations-api
+  name: Featureflip Organizations API
+  description: >-
+    The caller's organizations. `List` has no `{org}` segment (pass-through tenant
+
+    filter) and dispatches ListOrganizationsQuery, which already scopes to the
+
+    caller's own memberships. `Get` carries `{org}`, so
+
+    ResolveTenantFilter resolves + access-checks it first —
+
+    the action dispatches GetOrganizationQuery with the resolved GUID
+
+    (ResolvedOrgId), never the raw route string.
+  humanURL: https://featureflip.io/docs/management-api/overview/
+  baseURL: https://api.featureflip.io
+  tags:
+  - Organizations
+  properties:
+  - type: OpenAPI
+    url: openapi/featureflip-organizations-api-openapi.yml
+  - type: APIReference
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/authentication/
+  - type: LLMsTxt
+    url: https://featureflip.io/llms.txt
+  - type: APIReference
+    url: https://featureflip.io/docs/api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/api/reference/
+- aid: featureflip:featureflip-projects-api
+  name: Featureflip Projects API
+  description: >-
+    Projects within a resolved organization. Every route here carries `{org}`, so
+
+    ResolveTenantFilter has already resolved + access-checked
+
+    it before any action runs — dispatched commands/queries always use
+
+    ResolvedOrgId, never the raw route string.
+
+    `{project}` (get/update/delete) is resolved key-or-guid, scoped to the resolved org, via
+
+    ResolveProjectIdAsync — same addressing pattern as
+
+    OrganizationsController uses for `{org}`. Writes (create/update/delete)
+
+    require at least Member
+
+    (RequireRole); a Viewer attempting one gets a 403
+
+    `forbidden` envelope.
+  humanURL: https://featureflip.io/docs/management-api/overview/
+  baseURL: https://api.featureflip.io
+  tags:
+  - Projects
+  properties:
+  - type: OpenAPI
+    url: openapi/featureflip-projects-api-openapi.yml
+  - type: APIReference
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/authentication/
+  - type: LLMsTxt
+    url: https://featureflip.io/llms.txt
+  - type: APIReference
+    url: https://featureflip.io/docs/api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/api/reference/
+- aid: featureflip:featureflip-sdk-keys-api
+  name: Featureflip SDK Keys API
+  description: >-
+    SDK keys within a resolved organization + project + environment — one level deeper than
+
+    EnvironmentsController. Every action resolves `{project}` (key-or-guid,
+
+    scoped to the resolved org, with the service-token project allowlist forwarded) then
+
+    `{env}` (key-or-guid, scoped to the resolved project) via
+
+    IPublicApiTenantResolver, mirroring FeatureFlagsController's
+
+    resolve-then-dispatch shape. Unlike `{project}`/`{env}`, `{sdkKey}` is
+
+    guid-only — SDK keys have no key/slug of their own — resolved via
+
+    ResolveSdkKeyIdAsync, which throws the same
+
+    not-found error for a non-guid segment as a genuinely missing key. Writes
+
+    (create/update/revoke) require at least Member
+
+    (RequireRole); a Viewer attempting one gets a 403
+
+    `forbidden` envelope.
+
+
+    Type is a bare string on the wire; Create
+
+    parses it to SdkKeyType against a NAME allowlist
+
+    (`Enum.TryParse` + `Enum.GetNames().Contains(...)`) rather than a bare
+
+    `Enum.TryParse`/`Enum.IsDefined` pair — the latter would silently accept a numeric
+
+    string (e.g. `"0"`) and resolve it to the first enum member. An unrecognized value throws
+
+    the custom ValidationException BEFORE the environment is resolved or any command
+
+    is dispatched, mapped to a 400 `validation_failed` envelope by
+
+    PublicApiExceptionFilterAttribute — same pattern as
+
+    MapConditions's operator parse.
+
+    The plaintext key returned by CreateSdkKeyResult is a one-time value — it is
+
+    never recoverable afterward, so unlike Create's
+
+    re-fetch-after-write pattern, Create builds its response directly from the
+
+    command result rather than dispatching a follow-up query. List and
+
+    Get return PublicSdkKeyResponse, which carries only
+
+    `LastFourCharacters` — never the plaintext.
+  humanURL: https://featureflip.io/docs/management-api/overview/
+  baseURL: https://api.featureflip.io
+  tags:
+  - SDK Keys
+  properties:
+  - type: OpenAPI
+    url: openapi/featureflip-sdk-keys-api-openapi.yml
+  - type: APIReference
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/authentication/
+  - type: LLMsTxt
+    url: https://featureflip.io/llms.txt
+  - type: APIReference
+    url: https://featureflip.io/docs/api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/api/reference/
+- aid: featureflip:featureflip-server-sdk-api
+  name: Featureflip Server SDK API
+  description: >-
+    SDK endpoints for feature flag evaluation and configuration retrieval.
+
+    All endpoints require a valid SDK key passed via the Authorization header.
+  humanURL: https://featureflip.io/docs/management-api/overview/
+  baseURL: https://api.featureflip.io
+  tags:
+  - Server SDK
+  properties:
+  - type: OpenAPI
+    url: openapi/featureflip-server-sdk-api-openapi.yml
+  - type: APIReference
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/authentication/
+  - type: LLMsTxt
+    url: https://featureflip.io/llms.txt
+  - type: APIReference
+    url: https://featureflip.io/docs/api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/api/reference/
+- aid: featureflip:featureflip-user-segments-api
+  name: Featureflip User Segments API
+  description: >-
+    User segments within a resolved organization + project — mirrors
+
+    EnvironmentsController's resolve-then-dispatch shape one level deeper.
+
+    `{project}` is resolved key-or-guid, scoped to the resolved org (with the service-token
+
+    project allowlist forwarded), via ResolveProjectIdAsync
+
+    for every action. `{segment}` (get/update/delete) is then resolved key-or-guid, scoped to
+
+    the resolved project, via ResolveSegmentIdAsync.
+
+    Dispatched commands/queries always use the resolved GUIDs, never the raw route strings. Writes
+
+    (create/update/delete) require at least Member
+
+    (RequireRole); a Viewer attempting one gets a 403
+
+    `forbidden` envelope.
+
+
+    There is no `GetUserSegmentQuery` — Get resolves `{segment}` then
+
+    dispatches ListUserSegmentsQuery and finds the match in-memory, throwing
+
+    NotFoundException if absent. This keeps the task scoped to the public layer with
+
+    no new Application handler: the resolver has already validated the id exists within the
+
+    project, and a project's segment set is bounded (unlike flags/environments' own list, this
+
+    never needs true server-side pagination for the lookup).
+
+    Operator is a bare string on the wire; write actions
+
+    parse it to OperatorType via TryParse``1(ReadOnlySpan{Char},Boolean,``0@)
+
+    (case-insensitive). An unrecognized value throws the custom
+
+    ValidationException BEFORE any command is dispatched — mapped to a 400
+
+    `validation_failed` envelope by PublicApiExceptionFilterAttribute, same as
+
+    every other handler-thrown validation failure on this surface.
+  humanURL: https://featureflip.io/docs/management-api/overview/
+  baseURL: https://api.featureflip.io
+  tags:
+  - User Segments
+  properties:
+  - type: OpenAPI
+    url: openapi/featureflip-user-segments-api-openapi.yml
+  - type: APIReference
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/management-api/authentication/
+  - type: LLMsTxt
+    url: https://featureflip.io/llms.txt
+  - type: APIReference
+    url: https://featureflip.io/docs/api/reference/
+  - type: Documentation
+    url: https://featureflip.io/docs/api/reference/
 maintainers:
   - FN: Featureflip
     email: contact@featureflip.io
@@ -113,6 +488,10 @@ generated:
   confidence: 97
   at: '2026-09-12T04:54:28.200Z'
 common:
+- type: Overlay
+  url: overlays/featureflip-management-overlay.yaml
+- type: Overlay
+  url: overlays/featureflip-evaluation-overlay.yaml
 - type: Website
   url: https://featureflip.io/
 - type: Authentication
