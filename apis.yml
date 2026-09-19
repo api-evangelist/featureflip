@@ -135,6 +135,8 @@ apis:
   humanURL: https://featureflip.io/docs/management-api/overview/
   baseURL: https://api.featureflip.io
   tags:
+  - Environment
+  tags_raw:
   - Environments
   properties:
   - type: OpenAPI
@@ -254,6 +256,8 @@ apis:
   humanURL: https://featureflip.io/docs/management-api/overview/
   baseURL: https://api.featureflip.io
   tags:
+  - Organization
+  tags_raw:
   - Organizations
   properties:
   - type: OpenAPI
@@ -295,6 +299,8 @@ apis:
   humanURL: https://featureflip.io/docs/management-api/overview/
   baseURL: https://api.featureflip.io
   tags:
+  - Project
+  tags_raw:
   - Projects
   properties:
   - type: OpenAPI
