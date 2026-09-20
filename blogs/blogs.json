@@ -1,0 +1,14 @@
+{
+  "repo": "featureflip",
+  "feeds": [
+    {
+      "source": "https://featureflip.io/pricing/",
+      "feed_url": "https://featureflip.io/rss.xml",
+      "title": "",
+      "saved": 1,
+      "method": "discovered"
+    }
+  ],
+  "post_count": 1,
+  "fetched": "2026-09-19T20:17:39Z"
+}

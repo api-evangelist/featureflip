@@ -2,16 +2,16 @@
 kin_checks:
   slug: featureflip
   schema_version: 0.22.0
-  scored_at: '2026-09-18'
-  run_ts: 2026-09-18T231945
+  scored_at: '2026-09-19'
+  run_ts: 2026-09-19T193153
   note: Actionable checks (missed + partial) in `checks`, plus the ids that did not
     apply in `na`. Everything else in rubric/scoring-0.22.0.yml was earned; counts
     below let you verify that.
   counts:
     total: 136
-    earned: 49
-    partial: 8
-    missed: 53
+    earned: 47
+    partial: 9
+    missed: 54
     na: 26
   checks:
   - id: image_present
@@ -82,6 +82,9 @@ kin_checks:
     status: missed
   - id: postman_present
     status: missed
+  - id: sign_up_present
+    status: missed
+    detail: pointer liveness 0.0
   - id: finops_mapped
     status: missed
   - id: compliance_published
@@ -132,6 +135,10 @@ kin_checks:
     status: partial
     earned: 2.33
     detail: 7 of 9 openapi documents pass
+  - id: github_org_present
+    status: partial
+    earned: 1.0
+    detail: pointer liveness 0.5
   - id: agent_skill_present
     status: partial
     earned: 0.75
