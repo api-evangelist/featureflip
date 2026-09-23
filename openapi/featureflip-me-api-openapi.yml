@@ -1,0 +1,227 @@
+openapi: 3.2.0
+info:
+  title: Management Me API
+  description: 'Programmatic access to Featureflip — projects, environments, feature flags, variations, targeting, segments, and SDK keys. Authenticate with a Personal Access Token or Service Token via the Authorization: Bearer header.'
+  version: v1
+servers:
+- url: https://api.featureflip.io
+  description: Production
+security:
+- Bearer: []
+tags:
+- name: Me
+  description: 'The caller''s own identity. This route has no `{org}` segment, so
+
+    ResolveTenantFilter is a pass-through here — the caller
+
+    is read entirely from the authenticated principal (via GetCurrentUserQuery for a
+
+    user/PAT, or directly from claims for a service token), never from
+
+    ResolvedOrgId.'
+paths:
+  /api/v1/me:
+    get:
+      tags:
+      - Me
+      summary: Returns the authenticated caller's public identity (see MeResponse)
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: Unauthorized
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1Me
+      x-operation-id-source: derived
+components:
+  headers:
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
+  schemas:
+    NextAction:
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    PublicApiErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type:
+          - string
+          - 'null'
+        message:
+          type:
+          - string
+          - 'null'
+        docs_url:
+          type:
+          - string
+          - 'null'
+        fields:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        retry_after:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        did_you_mean:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        next_actions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/NextAction'
+      additionalProperties: false
+      description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
+
+        are frozen snake_case too (`error`, `message`, `docs_url`, `fields`,
+
+        `retry_after`) — the global camelCase naming policy would otherwise emit
+
+        `docsUrl`/`retryAfter`, breaking the published spec. !:JsonPropertyName
+
+        always wins over the policy, so these are pinned explicitly rather than relying on the
+
+        property names already being lowercase for the single-word ones.
+
+        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
+
+        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
+
+        are byte-for-byte unchanged when they''re absent.'
+      example:
+        error: not_found
+        message: Flag 'new-checkout-flw' was not found in project 'checkout'.
+        docs_url: https://featureflip.io/docs/management-api/errors/not_found
+        did_you_mean:
+        - new-checkout-flow
+        next_actions:
+        - method: GET
+          path: /api/v1/orgs/acme/projects/checkout/flags
+    MeResponse:
+      type: object
+      properties:
+        type:
+          type:
+          - string
+          - 'null'
+        id:
+          type: string
+          format: uuid
+        name:
+          type:
+          - string
+          - 'null'
+        email:
+          type:
+          - string
+          - 'null'
+        emailVerified:
+          type:
+          - boolean
+          - 'null'
+        organizationId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        role:
+          type:
+          - string
+          - 'null'
+        projectScope:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+            format: uuid
+      additionalProperties: false
+      description: 'The authenticated caller''s identity, returned by `GET /api/v1/me`. The public API
+
+        authenticates two kinds of principal, so this is a `type`-discriminated shape.
+
+        A `"user"` caller (a session/JWT user or a personal access token, `ffp_...`) carries
+
+        `email` + `emailVerified`. A `"service_token"` caller (`ffs_...`) has no
+
+        backing user row, so it carries `organizationId` + `role` + `projectScope` (the
+
+        token''s org, its role in that org, and its project allowlist) instead. The type-inapplicable
+
+        fields are omitted from the response body. `projectScope` is omitted for an unrestricted
+
+        service token (access to every project), never an empty list.'
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      description: JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.
+      name: Authorization
+      in: header

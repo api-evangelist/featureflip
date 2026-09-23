@@ -1,0 +1,41 @@
+{
+  "provider": "featureflip",
+  "sources": [
+    "_original/evaluation-v1.json",
+    "_original/featureflip-management-api.json"
+  ],
+  "outputs": [
+    "featureflip-client-sdk-api-openapi.yml",
+    "featureflip-server-sdk-api-openapi.yml",
+    "featureflip-environments-api-openapi.yml",
+    "featureflip-feature-flags-api-openapi.yml",
+    "featureflip-me-api-openapi.yml",
+    "featureflip-organizations-api-openapi.yml",
+    "featureflip-projects-api-openapi.yml",
+    "featureflip-sdk-keys-api-openapi.yml",
+    "featureflip-user-segments-api-openapi.yml"
+  ],
+  "archived": [],
+  "errors": [],
+  "warnings": [],
+  "notes": [
+    "2 archived document(s) dropped as subsets of other archived documents",
+    "sourced from openapi/_original/ (2 archived document(s)); previously refined output at the top level was skipped rather than re-split",
+    "evaluation-v1.json: upgraded openapi 3.0.4 -> OpenAPI 3.2.0",
+    "featureflip-management-api.json: upgraded openapi 3.0.4 -> OpenAPI 3.2.0",
+    "apis.yml register: already-registered"
+  ],
+  "skipped": [
+    "_original/management-public-v1.json: archived document superseded by a larger archived document",
+    "_original/featureflip-evaluation-api.json: archived document superseded by a larger archived document",
+    "featureflip-client-sdk-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "featureflip-environments-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "featureflip-feature-flags-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "featureflip-me-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "featureflip-organizations-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "featureflip-projects-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "featureflip-sdk-keys-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "featureflip-server-sdk-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "featureflip-user-segments-api-openapi.yml: previously refined output, superseded by openapi/_original/"
+  ]
+}

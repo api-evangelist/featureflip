@@ -1,0 +1,829 @@
+openapi: 3.2.0
+info:
+  title: Management SDK Keys API
+  description: 'Programmatic access to Featureflip — projects, environments, feature flags, variations, targeting, segments, and SDK keys. Authenticate with a Personal Access Token or Service Token via the Authorization: Bearer header.'
+  version: v1
+servers:
+- url: https://api.featureflip.io
+  description: Production
+security:
+- Bearer: []
+tags:
+- name: SDK Keys
+  description: 'SDK keys within a resolved organization + project + environment — one level deeper than
+
+    EnvironmentsController.'
+paths:
+  /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys:
+    post:
+      tags:
+      - SDK Keys
+      summary: Creates an SDK key in the resolved environment
+      description: 'Requires at least Member. Returns the
+
+        plaintext key exactly once — see the type-level remarks.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateSdkKeyRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateSdkKeyRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateSdkKeyRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicCreateSdkKeyResponse'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: postApiV1OrgsByOrgProjectsByProjectEnvironmentsByEnvSdkKeys
+      x-operation-id-source: derived
+    get:
+      tags:
+      - SDK Keys
+      summary: Lists SDK keys in the resolved environment, cursor-paginated
+      description: 'Like
+
+        List, ListSdkKeysQuery has no
+
+        `Skip`/`Take` (an environment''s key count is small), so this fetches the full
+
+        set and pages in-memory to still expose the standard cursor contract.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSdkKeyResponsePagedResult'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectEnvironmentsByEnvSdkKeys
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys/{sdkKey}:
+    get:
+      tags:
+      - SDK Keys
+      summary: Gets an SDK key in the resolved environment by id (guid-only — see the…
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sdkKey
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSdkKeyResponse'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectEnvironmentsByEnvSdkKeysBySdkKey
+      x-operation-id-source: derived
+    put:
+      tags:
+      - SDK Keys
+      summary: Updates an SDK key's name/description
+      description: Requires at least Member. Type and key material are immutable via this endpoint.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sdkKey
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateSdkKeyRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateSdkKeyRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateSdkKeyRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectEnvironmentsByEnvSdkKeysBySdkKey
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys/{sdkKey}/revoke:
+    post:
+      tags:
+      - SDK Keys
+      summary: Revokes an SDK key
+      description: Requires at least Member.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: sdkKey
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: postApiV1OrgsByOrgProjectsByProjectEnvironmentsByEnvSdkKeysBySdkKeyRevoke
+      x-operation-id-source: derived
+components:
+  headers:
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
+  schemas:
+    ActionCapability:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+    NextAction:
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    PublicUpdateSdkKeyRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys/{sdkKey}`.
+
+        Type and key material are immutable via this endpoint (mirrors
+
+        UpdateSdkKeyCommand, which
+
+        carries no `Type`).'
+    PublicCreateSdkKeyRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        type:
+          enum:
+          - ClientSide
+          - ServerSide
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: ClientSide, ServerSide.'
+      additionalProperties: false
+      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys`.
+
+        Type is a bare string ("ClientSide" or "ServerSide") — the controller parses it
+
+        against a NAME allowlist (not a bare TryParse``1(ReadOnlySpan{Char},Boolean,``0@), which would
+
+        silently accept a numeric string like `"0"`) before dispatching. Named distinctly from
+
+        the dashboard''s own `CreateSdkKeyRequest` — both
+
+        controllers share one Swagger document, and an identical type name in either namespace throws
+
+        a schemaId collision at `--export-openapi` time.'
+      example:
+        name: Production server key
+        description: Used by the checkout backend.
+        type: ServerSide
+    PublicApiErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type:
+          - string
+          - 'null'
+        message:
+          type:
+          - string
+          - 'null'
+        docs_url:
+          type:
+          - string
+          - 'null'
+        fields:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        retry_after:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        did_you_mean:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        next_actions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/NextAction'
+      additionalProperties: false
+      description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
+
+        are frozen snake_case too (`error`, `message`, `docs_url`, `fields`,
+
+        `retry_after`) — the global camelCase naming policy would otherwise emit
+
+        `docsUrl`/`retryAfter`, breaking the published spec. !:JsonPropertyName
+
+        always wins over the policy, so these are pinned explicitly rather than relying on the
+
+        property names already being lowercase for the single-word ones.
+
+        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
+
+        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
+
+        are byte-for-byte unchanged when they''re absent.'
+      example:
+        error: not_found
+        message: Flag 'new-checkout-flw' was not found in project 'checkout'.
+        docs_url: https://featureflip.io/docs/management-api/errors/not_found
+        did_you_mean:
+        - new-checkout-flow
+        next_actions:
+        - method: GET
+          path: /api/v1/orgs/acme/projects/checkout/flags
+    PublicCreateSdkKeyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type:
+          - string
+          - 'null'
+        lastFourCharacters:
+          type:
+          - string
+          - 'null'
+        type:
+          enum:
+          - ClientSide
+          - ServerSide
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: ClientSide, ServerSide.'
+        name:
+          type:
+          - string
+          - 'null'
+        createdAt:
+          type: string
+          format: date-time
+        warning:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Response body for a successful `POST .../sdk-keys`. The ONLY place the plaintext
+
+        Key is ever returned — PublicSdkKeyResponse (list/get) carries just
+
+        `LastFourCharacters`. Built directly from CreateSdkKeyResult rather than a
+
+        re-fetch (unlike `FeatureFlagsController.Create`''s re-fetch pattern) because the
+
+        plaintext key only ever exists on the create result — a subsequent
+
+        GetSdkKeyQuery can''t recover it.'
+      example:
+        id: 0197b6a2-4d5e-7f6a-9b7c-8d9e0f1a2b3c
+        key: ff_server_9f8e7d6c5b4a39281706f5e4d3c2b1a0
+        lastFourCharacters: b1a0
+        type: ServerSide
+        name: Production server key
+        createdAt: '2026-06-01T12:00:00Z'
+        warning: Store this key securely — it will not be shown again.
+    PublicSdkKeyResponsePagedResult:
+      type: object
+      properties:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicSdkKeyResponse'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    PublicSdkKeyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        type:
+          enum:
+          - ClientSide
+          - ServerSide
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: ClientSide, ServerSide.'
+        lastFourCharacters:
+          type:
+          - string
+          - 'null'
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        revokedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'Public representation of an SDK key, returned by
+
+        `GET /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys` (list) and
+
+        `GET .../sdk-keys/{sdkKey}` (detail). Deliberately narrower than
+
+        SdkKeyDto — drops `RevokedBy` (an internal user id) and
+
+        `EnvironmentId` (implicit in the route), and carries no plaintext key field: only
+
+        LastFourCharacters is ever exposed once the key has been created. The plaintext
+
+        key is a one-time value that appears solely in PublicCreateSdkKeyResponse.'
+      example:
+        id: 0197b6a2-4d5e-7f6a-9b7c-8d9e0f1a2b3c
+        name: Production server key
+        description: Used by the checkout backend.
+        type: ServerSide
+        lastFourCharacters: b1a0
+        isActive: true
+        createdAt: '2026-06-01T12:00:00Z'
+        lastUsedAt: '2026-06-20T09:15:00Z'
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      description: JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.
+      name: Authorization
+      in: header

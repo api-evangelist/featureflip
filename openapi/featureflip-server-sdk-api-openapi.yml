@@ -1,0 +1,569 @@
+openapi: 3.2.0
+info:
+  title: Featureflip Evaluation Server SDK API
+  description: High-performance feature flag evaluation service for SDKs
+  version: v1
+servers:
+- url: https://eval.featureflip.io
+  description: Production
+security:
+- Bearer: []
+tags:
+- name: Server SDK
+  description: 'SDK endpoints for feature flag evaluation and configuration retrieval.
+
+    All endpoints require a valid SDK key passed via the Authorization header.'
+paths:
+  /v1/sdk/flags:
+    get:
+      tags:
+      - Server SDK
+      summary: Retrieves all feature flags for the authenticated environment
+      responses:
+        '200':
+          description: Returns the environment configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFlagsResponse'
+        '401':
+          description: SDK key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`.
+      operationId: getV1SdkFlags
+      x-operation-id-source: derived
+  /v1/sdk/flags/{key}:
+    get:
+      tags:
+      - Server SDK
+      summary: Retrieves a specific feature flag by key
+      parameters:
+      - name: key
+        in: path
+        description: The flag key to retrieve.
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Returns the flag configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlagDto'
+        '401':
+          description: SDK key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Flag with the specified key was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`.
+      operationId: getV1SdkFlagsByKey
+      x-operation-id-source: derived
+  /v1/sdk/evaluate:
+    post:
+      tags:
+      - Server SDK
+      summary: Evaluates a feature flag for the given context
+      requestBody:
+        description: The evaluation request containing flag key and context.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluateFlagRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/EvaluateFlagRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/EvaluateFlagRequest'
+      responses:
+        '200':
+          description: Returns the evaluation result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluateFlagResponse'
+        '401':
+          description: SDK key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Flag with the specified key was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Service Unavailable
+      operationId: postV1SdkEvaluate
+      x-operation-id-source: derived
+  /v1/sdk/events:
+    post:
+      tags:
+      - Server SDK
+      summary: Records SDK events for analytics and debugging
+      requestBody:
+        description: Batch of events to record.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordEventsRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/RecordEventsRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/RecordEventsRequest'
+      responses:
+        '202':
+          description: Events were accepted for processing.
+        '401':
+          description: SDK key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      operationId: postV1SdkEvents
+      x-operation-id-source: derived
+  /v1/sdk/stream:
+    get:
+      tags:
+      - Server SDK
+      summary: Opens a Server-Sent Events stream for real-time flag updates
+      responses:
+        '200':
+          description: SSE stream opened successfully.
+        '401':
+          description: SDK key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`.
+      operationId: getV1SdkStream
+      x-operation-id-source: derived
+components:
+  schemas:
+    SdkEventType:
+      enum:
+      - Evaluation
+      - Impression
+      - Identify
+      - Custom
+      type: string
+    ConditionLogic:
+      enum:
+      - And
+      - Or
+      type: string
+    EvaluateFlagResponse:
+      required:
+      - key
+      - reason
+      - value
+      - variation
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        variation:
+          type:
+          - string
+          - 'null'
+        value: {}
+        reason:
+          type:
+          - string
+          - 'null'
+        prerequisiteKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    PrerequisiteDto:
+      required:
+      - expectedVariationKey
+      - prerequisiteFlagKey
+      type: object
+      properties:
+        prerequisiteFlagKey:
+          type:
+          - string
+          - 'null'
+        expectedVariationKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type:
+          - string
+          - 'null'
+        title:
+          type:
+          - string
+          - 'null'
+        status:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        detail:
+          type:
+          - string
+          - 'null'
+        instance:
+          type:
+          - string
+          - 'null'
+      additionalProperties: {}
+    ServeType:
+      enum:
+      - Fixed
+      - Rollout
+      type: string
+    RuleDto:
+      required:
+      - conditionGroups
+      - id
+      - priority
+      - serve
+      type: object
+      properties:
+        id:
+          type:
+          - string
+          - 'null'
+        priority:
+          type: integer
+          format: int32
+        conditionGroups:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/ConditionGroupDto'
+        serve:
+          $ref: '#/components/schemas/ServeConfigDto'
+        segmentKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    EvaluationContextDto:
+      type: object
+      properties:
+        userId:
+          type:
+          - string
+          - 'null'
+        attributes:
+          type:
+          - object
+          - 'null'
+          additionalProperties: {}
+      additionalProperties: false
+    SdkEventDto:
+      required:
+      - flagKey
+      - type
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/SdkEventType'
+        flagKey:
+          type:
+          - string
+          - 'null'
+        userId:
+          type:
+          - string
+          - 'null'
+        variation:
+          type:
+          - string
+          - 'null'
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          type:
+          - object
+          - 'null'
+          additionalProperties: {}
+        prerequisiteKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    EvaluateFlagRequest:
+      required:
+      - context
+      - flagKey
+      type: object
+      properties:
+        flagKey:
+          type:
+          - string
+          - 'null'
+        context:
+          $ref: '#/components/schemas/EvaluationContextDto'
+      additionalProperties: false
+    ConditionDto:
+      required:
+      - attribute
+      - operator
+      - values
+      type: object
+      properties:
+        attribute:
+          type:
+          - string
+          - 'null'
+        operator:
+          $ref: '#/components/schemas/ConditionOperator'
+        values:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        negate:
+          type: boolean
+      additionalProperties: false
+    ConditionOperator:
+      enum:
+      - Equals
+      - NotEquals
+      - Contains
+      - NotContains
+      - StartsWith
+      - EndsWith
+      - In
+      - NotIn
+      - MatchesRegex
+      - GreaterThan
+      - LessThan
+      - GreaterThanOrEqual
+      - LessThanOrEqual
+      - Before
+      - After
+      - SemverEquals
+      - SemverGreaterThan
+      - SemverGreaterThanOrEqual
+      - SemverLessThan
+      - SemverLessThanOrEqual
+      type: string
+    SegmentDto:
+      required:
+      - conditionLogic
+      - conditions
+      - key
+      - version
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        version:
+          type: integer
+          format: int32
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/ConditionDto'
+        conditionLogic:
+          $ref: '#/components/schemas/ConditionLogic'
+      additionalProperties: false
+    FlagDto:
+      required:
+      - enabled
+      - fallthrough
+      - key
+      - offVariation
+      - prerequisites
+      - rules
+      - type
+      - variations
+      - version
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        version:
+          type: integer
+          format: int32
+        type:
+          $ref: '#/components/schemas/FlagType'
+        enabled:
+          type: boolean
+        variations:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/VariationDto'
+        rules:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/RuleDto'
+        fallthrough:
+          $ref: '#/components/schemas/ServeConfigDto'
+        offVariation:
+          type:
+          - string
+          - 'null'
+        prerequisites:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PrerequisiteDto'
+      additionalProperties: false
+    RecordEventsRequest:
+      required:
+      - events
+      type: object
+      properties:
+        events:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/SdkEventDto'
+      additionalProperties: false
+    GetFlagsResponse:
+      required:
+      - environment
+      - flags
+      - segments
+      - version
+      type: object
+      properties:
+        environment:
+          type:
+          - string
+          - 'null'
+        version:
+          type: integer
+          format: int32
+        flags:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/FlagDto'
+        segments:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/SegmentDto'
+      additionalProperties: false
+    WeightedVariationDto:
+      required:
+      - key
+      - weight
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        weight:
+          type: integer
+          format: int32
+      additionalProperties: false
+    VariationDto:
+      required:
+      - key
+      - value
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        value: {}
+      additionalProperties: false
+    FlagType:
+      enum:
+      - Boolean
+      - String
+      - Number
+      - Json
+      type: string
+    ConditionGroupDto:
+      required:
+      - conditions
+      - operator
+      type: object
+      properties:
+        operator:
+          $ref: '#/components/schemas/ConditionLogic'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/ConditionDto'
+      additionalProperties: false
+    ServeConfigDto:
+      required:
+      - type
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/ServeType'
+        variation:
+          type:
+          - string
+          - 'null'
+        bucketBy:
+          type:
+          - string
+          - 'null'
+        salt:
+          type:
+          - string
+          - 'null'
+        variations:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/WeightedVariationDto'
+      additionalProperties: false
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      description: SDK Key authorization. Enter your SDK key.
+      name: Authorization
+      in: header

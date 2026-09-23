@@ -1,0 +1,646 @@
+openapi: 3.2.0
+info:
+  title: Management Projects API
+  description: 'Programmatic access to Featureflip — projects, environments, feature flags, variations, targeting, segments, and SDK keys. Authenticate with a Personal Access Token or Service Token via the Authorization: Bearer header.'
+  version: v1
+servers:
+- url: https://api.featureflip.io
+  description: Production
+security:
+- Bearer: []
+tags:
+- name: Projects
+  description: Projects within a resolved organization.
+paths:
+  /api/v1/orgs/{org}/projects:
+    post:
+      tags:
+      - Projects
+      summary: Creates a project in the resolved organization
+      description: Requires at least Member.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateProjectRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateProjectRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateProjectRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: postApiV1OrgsByOrgProjects
+      x-operation-id-source: derived
+    get:
+      tags:
+      - Projects
+      summary: Lists projects in the resolved organization, cursor-paginated
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponsePagedResult'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjects
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}:
+    get:
+      tags:
+      - Projects
+      summary: Gets a project in the resolved organization by key or id
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProject
+      x-operation-id-source: derived
+    put:
+      tags:
+      - Projects
+      summary: Updates a project's name/description
+      description: Requires at least Member.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateProjectRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateProjectRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateProjectRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProject
+      x-operation-id-source: derived
+    delete:
+      tags:
+      - Projects
+      summary: Deletes a project
+      description: Requires at least Member.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: deleteApiV1OrgsByOrgProjectsByProject
+      x-operation-id-source: derived
+components:
+  schemas:
+    ProjectResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'Public representation of a project, returned by `GET /api/v1/orgs/{org}/projects` (list),
+
+        `GET .../projects/{project}` (detail), and the body of a successful create/update. Drops
+
+        the dashboard-only nested `Environments` collection from ProjectDto — the
+
+        public API surfaces environments via their own endpoint (Task 6), not embedded here.
+
+        UpdatedAt is only populated from ProjectDto (the detail/create
+
+        shape); ProjectListItemDto doesn''t carry it, so list rows leave it `null`.'
+      example:
+        id: 0197b69f-1a2b-7c3d-8e4f-5a6b7c8d9e0f
+        key: checkout
+        name: Checkout
+        description: Checkout and payments surfaces.
+        createdAt: '2026-06-01T12:00:00Z'
+        updatedAt: '2026-06-15T08:30:00Z'
+    ActionCapability:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+    ProjectResponsePagedResult:
+      type: object
+      properties:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/ProjectResponse'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    NextAction:
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    PublicApiErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type:
+          - string
+          - 'null'
+        message:
+          type:
+          - string
+          - 'null'
+        docs_url:
+          type:
+          - string
+          - 'null'
+        fields:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        retry_after:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        did_you_mean:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        next_actions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/NextAction'
+      additionalProperties: false
+      description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
+
+        are frozen snake_case too (`error`, `message`, `docs_url`, `fields`,
+
+        `retry_after`) — the global camelCase naming policy would otherwise emit
+
+        `docsUrl`/`retryAfter`, breaking the published spec. !:JsonPropertyName
+
+        always wins over the policy, so these are pinned explicitly rather than relying on the
+
+        property names already being lowercase for the single-word ones.
+
+        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
+
+        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
+
+        are byte-for-byte unchanged when they''re absent.'
+      example:
+        error: not_found
+        message: Flag 'new-checkout-flw' was not found in project 'checkout'.
+        docs_url: https://featureflip.io/docs/management-api/errors/not_found
+        did_you_mean:
+        - new-checkout-flow
+        next_actions:
+        - method: GET
+          path: /api/v1/orgs/acme/projects/checkout/flags
+    PublicUpdateProjectRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}`. See
+
+        PublicCreateProjectRequest for why this is named distinctly from the
+
+        dashboard''s `UpdateProjectRequest`.'
+    PublicCreateProjectRequest:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for `POST /api/v1/orgs/{org}/projects`. Named distinctly from the
+
+        dashboard''s own `CreateProjectRequest` — both
+
+        controllers share one Swagger document (see `Program.cs`''s `AddSwaggerGen``DocInclusionPredicate` override), and Swashbuckle''s default schemaId is the bare type
+
+        name, so an identical name in either namespace throws a schemaId collision at
+
+        `--export-openapi` time.'
+      example:
+        key: checkout
+        name: Checkout
+        description: Checkout and payments surfaces.
+  headers:
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      description: JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.
+      name: Authorization
+      in: header

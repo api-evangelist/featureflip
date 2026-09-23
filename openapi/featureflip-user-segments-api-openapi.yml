@@ -1,0 +1,818 @@
+openapi: 3.2.0
+info:
+  title: Management User Segments API
+  description: 'Programmatic access to Featureflip — projects, environments, feature flags, variations, targeting, segments, and SDK keys. Authenticate with a Personal Access Token or Service Token via the Authorization: Bearer header.'
+  version: v1
+servers:
+- url: https://api.featureflip.io
+  description: Production
+security:
+- Bearer: []
+tags:
+- name: User Segments
+  description: 'User segments within a resolved organization + project — mirrors
+
+    EnvironmentsController''s resolve-then-dispatch shape one level deeper.'
+paths:
+  /api/v1/orgs/{org}/projects/{project}/segments:
+    post:
+      tags:
+      - User Segments
+      summary: Creates a user segment in the resolved project
+      description: 'Requires at least Member. Re-fetches via
+
+        ListUserSegmentsQuery (there is no single-segment query) and locates the new
+
+        segment by the id returned from CreateUserSegmentCommand so the response
+
+        reflects exactly what was persisted (e.g. server-assigned condition ids, folded into the
+
+        public shape via FromDto).'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateSegmentRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateSegmentRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateSegmentRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSegmentResponse'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: postApiV1OrgsByOrgProjectsByProjectSegments
+      x-operation-id-source: derived
+    get:
+      tags:
+      - User Segments
+      summary: Lists user segments in the resolved project, cursor-paginated
+      description: 'Like
+
+        List, ListUserSegmentsQuery has no
+
+        `Skip`/`Take` (a project''s segment count is small), so this fetches the full set
+
+        and pages in-memory to still expose the standard cursor contract.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSegmentResponsePagedResult'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectSegments
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/segments/{segment}:
+    get:
+      tags:
+      - User Segments
+      summary: Gets a user segment in the resolved project by key or id
+      description: 'There is no
+
+        ListUserSegments-adjacent single-item
+
+        query, so this resolves `{segment}` then dispatches ListUserSegmentsQuery
+
+        and finds the match — see the type-level remarks for why a list+find is acceptable here.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: segment
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSegmentResponse'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectSegmentsBySegment
+      x-operation-id-source: derived
+    put:
+      tags:
+      - User Segments
+      summary: Updates a segment's name/description/conditions
+      description: Requires at least Member. The segment's key is immutable via this endpoint.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: segment
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateSegmentRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateSegmentRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateSegmentRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectSegmentsBySegment
+      x-operation-id-source: derived
+    delete:
+      tags:
+      - User Segments
+      summary: Deletes a user segment
+      description: Requires at least Member.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: segment
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: deleteApiV1OrgsByOrgProjectsByProjectSegmentsBySegment
+      x-operation-id-source: derived
+components:
+  headers:
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
+  schemas:
+    ActionCapability:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+    NextAction:
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    PublicApiErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type:
+          - string
+          - 'null'
+        message:
+          type:
+          - string
+          - 'null'
+        docs_url:
+          type:
+          - string
+          - 'null'
+        fields:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        retry_after:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        did_you_mean:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        next_actions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/NextAction'
+      additionalProperties: false
+      description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
+
+        are frozen snake_case too (`error`, `message`, `docs_url`, `fields`,
+
+        `retry_after`) — the global camelCase naming policy would otherwise emit
+
+        `docsUrl`/`retryAfter`, breaking the published spec. !:JsonPropertyName
+
+        always wins over the policy, so these are pinned explicitly rather than relying on the
+
+        property names already being lowercase for the single-word ones.
+
+        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
+
+        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
+
+        are byte-for-byte unchanged when they''re absent.'
+      example:
+        error: not_found
+        message: Flag 'new-checkout-flw' was not found in project 'checkout'.
+        docs_url: https://featureflip.io/docs/management-api/errors/not_found
+        did_you_mean:
+        - new-checkout-flow
+        next_actions:
+        - method: GET
+          path: /api/v1/orgs/acme/projects/checkout/flags
+    PublicSegmentResponsePagedResult:
+      type: object
+      properties:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicSegmentResponse'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    PublicSegmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicSegmentConditionDto'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'Public representation of a user segment, returned by `GET .../segments`,
+
+        `GET .../segments/{segment}`, and the body of a successful create.'
+      example:
+        id: 0197b6a1-3c4d-7e5f-8a6b-7c8d9e0f1a2b
+        key: beta-testers
+        name: Beta Testers
+        description: Users enrolled in the beta program.
+        conditions:
+        - attribute: email
+          operator: EndsWith
+          values:
+          - '@acme.com'
+          negate: false
+        createdAt: '2026-06-01T12:00:00Z'
+        updatedAt: '2026-06-15T08:30:00Z'
+    PublicUpdateSegmentRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicSegmentConditionDto'
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/segments/{segment}`. The
+
+        segment''s key is immutable via this endpoint (mirrors `UpdateUserSegmentCommand`, which
+
+        carries no `Key`).'
+    PublicCreateSegmentRequest:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicSegmentConditionDto'
+      additionalProperties: false
+      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/segments`. Named distinctly
+
+        from the dashboard''s own `CreateUserSegmentRequest` — see
+
+        PublicCreateEnvironmentRequest for the schemaId-collision rationale (both
+
+        controllers share one Swagger document).'
+      example:
+        key: beta-testers
+        name: Beta Testers
+        description: Users enrolled in the beta program.
+        conditions:
+        - attribute: email
+          operator: EndsWith
+          values:
+          - '@acme.com'
+          negate: false
+    PublicSegmentConditionDto:
+      type: object
+      properties:
+        attribute:
+          type:
+          - string
+          - 'null'
+        operator:
+          enum:
+          - Equals
+          - NotEquals
+          - Contains
+          - NotContains
+          - GreaterThan
+          - LessThan
+          - GreaterThanOrEqual
+          - LessThanOrEqual
+          - In
+          - NotIn
+          - MatchesRegex
+          - StartsWith
+          - EndsWith
+          - Before
+          - After
+          - SemverEquals
+          - SemverGreaterThan
+          - SemverGreaterThanOrEqual
+          - SemverLessThan
+          - SemverLessThanOrEqual
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: Equals, NotEquals, Contains, NotContains, GreaterThan, LessThan, GreaterThanOrEqual, LessThanOrEqual, In, NotIn, MatchesRegex, StartsWith, EndsWith, Before, After, SemverEquals, SemverGreaterThan, SemverGreaterThanOrEqual, SemverLessThan, SemverLessThanOrEqual.'
+        values:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        negate:
+          type: boolean
+      additionalProperties: false
+      description: 'A single targeting condition on a segment, used both as input (create/update) and output
+
+        (Conditions). Operator is a bare string on
+
+        both sides of the wire — on write it''s parsed to
+
+        OperatorType by `SegmentsController` (an unknown
+
+        value fails closed with a 400, never silently dropped or defaulted); on read it''s mapped
+
+        straight through from Operator, which is already a string.'
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      description: JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.
+      name: Authorization
+      in: header

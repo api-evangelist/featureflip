@@ -1,0 +1,3402 @@
+openapi: 3.2.0
+info:
+  title: Management Feature Flags API
+  description: 'Programmatic access to Featureflip — projects, environments, feature flags, variations, targeting, segments, and SDK keys. Authenticate with a Personal Access Token or Service Token via the Authorization: Bearer header.'
+  version: v1
+servers:
+- url: https://api.featureflip.io
+  description: Production
+security:
+- Bearer: []
+tags:
+- name: Feature Flags
+  description: 'Feature flags within a resolved organization + project — mirrors
+
+    EnvironmentsController''s resolve-then-dispatch shape one level deeper.'
+paths:
+  /api/v1/orgs/{org}/projects/{project}/flags:
+    post:
+      tags:
+      - Feature Flags
+      summary: Creates a feature flag in the resolved project
+      description: 'Requires at least Member.
+
+        Type is passed through verbatim to
+
+        Type (a bare string) — an invalid value surfaces as
+
+        the handler''s own validation failure. Re-fetches via GetFeatureFlagQuery so
+
+        the response reflects exactly what was persisted (e.g. server-assigned variation ids).'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateFeatureFlagRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateFeatureFlagRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateFeatureFlagRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicFlagResponse'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: postApiV1OrgsByOrgProjectsByProjectFlags
+      x-operation-id-source: derived
+    get:
+      tags:
+      - Feature Flags
+      summary: Lists feature flags in the resolved project, cursor-paginated
+      description: 'Unlike
+
+        List, ListFeatureFlagsQuery IS
+
+        `Skip`/`Take`-based and returns a precise `Total`, so the next cursor is
+
+        computed from the query result rather than an in-memory count. `type` is parsed
+
+        leniently — an unrecognized value degrades to "no type filter" (matching
+
+        Decode''s "garbage input degrades gracefully" precedent)
+
+        rather than a 400, since it''s a non-critical list filter, not a mutation.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: tag
+        in: query
+        schema:
+          type: string
+      - name: type
+        in: query
+        schema:
+          type: string
+      - name: archived
+        in: query
+        schema:
+          type: boolean
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicFlagListItemPagedResult'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectFlags
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/removal-candidates:
+    get:
+      tags:
+      - Feature Flags
+      summary: Lists confidently-dead (or, with `staleness=stale`, stale-or-dead) flags the…
+      description: 'Only flags the staleness engine marks at or
+
+        above the requested tier via a decisive StuckRolledOut/StuckRolledBack reason are returned;
+
+        ZeroTraffic/CreatedUnused, cross-env-divergent, and archived flags are omitted (no confident code
+
+        treatment). The ONLY public projection of staleness.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: staleness
+        in: query
+        description: 'Minimum staleness tier to include: `dead` (default) or `stale` (includes Stale + Dead).
+
+          Omitted or any unrecognized value falls back to `dead` — the safe default never widens
+
+          silently.'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicFlagRemovalCandidatePagedResult'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectFlagsRemovalCandidates
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}:
+    get:
+      tags:
+      - Feature Flags
+      summary: Gets a feature flag in the resolved project by key or id
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicFlagResponse'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectFlagsByFlag
+      x-operation-id-source: derived
+    put:
+      tags:
+      - Feature Flags
+      summary: Updates a flag's name/description/tags/client-side visibility
+      description: 'Requires at least Member.
+
+        Key and type are immutable via this endpoint (mirrors UpdateFeatureFlagCommand,
+
+        which carries no `Key`/`Type`).'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateFeatureFlagRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateFeatureFlagRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateFeatureFlagRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectFlagsByFlag
+      x-operation-id-source: derived
+    delete:
+      tags:
+      - Feature Flags
+      summary: Deletes a flag
+      description: 'Requires at least Member. A flag with dependent prerequisites throws the
+
+        existing `FLAG_HAS_DEPENDENTS`ValidationException, which the
+
+        exception filter maps to a 400 `validation_failed` envelope — this action doesn''t
+
+        special-case it.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: deleteApiV1OrgsByOrgProjectsByProjectFlagsByFlag
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/archive:
+    post:
+      tags:
+      - Feature Flags
+      summary: Archives a flag
+      description: Requires at least Member.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: postApiV1OrgsByOrgProjectsByProjectFlagsByFlagArchive
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/restore:
+    post:
+      tags:
+      - Feature Flags
+      summary: Restores a previously archived flag
+      description: Requires at least Member.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: postApiV1OrgsByOrgProjectsByProjectFlagsByFlagRestore
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments:
+    get:
+      tags:
+      - Feature Flags
+      summary: Gets the resolved flag's config in every environment of the resolved project
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicFlagEnvConfigResponse'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectFlagsByFlagEnvironments
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}:
+    get:
+      tags:
+      - Feature Flags
+      summary: Gets the resolved flag's config in a single resolved environment
+      description: 'There is no
+
+        single-environment query on the Application side, so this dispatches the same
+
+        GetFlagEnvironmentConfigurationsQuery as GetAll and finds the
+
+        resolved environment by id.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicFlagEnvConfigResponse'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectFlagsByFlagEnvironmentsByEnv
+      x-operation-id-source: derived
+    put:
+      tags:
+      - Feature Flags
+      summary: Updates the resolved flag's default variation, strategy, and (optionally)…
+      description: 'Requires at least Member. A null
+
+        Prerequisites leaves prerequisites untouched;
+
+        a non-null list replaces them wholesale.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateFlagEnvConfigRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateFlagEnvConfigRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateFlagEnvConfigRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectFlagsByFlagEnvironmentsByEnv
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}/toggle:
+    post:
+      tags:
+      - Feature Flags
+      summary: Enables or disables the resolved flag in a resolved environment
+      description: Requires at least Member.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicToggleFlagRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicToggleFlagRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicToggleFlagRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: postApiV1OrgsByOrgProjectsByProjectFlagsByFlagEnvironmentsByEnvToggle
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}/targeting:
+    get:
+      tags:
+      - Feature Flags
+      summary: Gets the resolved flag's full targeting configuration (enabled flag + ordered…
+      description: 'GetTargetingConfigurationQuery returns null when
+
+        no `FlagEnvironmentConfiguration` exists yet for this flag/environment pair — treated
+
+        as 404 here (rather than an empty PublicTargetingConfigResponse) for
+
+        consistency with every other resolved-resource 404 on this surface.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicTargetingConfigResponse'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectFlagsByFlagEnvironmentsByEnvTargeting
+      x-operation-id-source: derived
+    put:
+      tags:
+      - Feature Flags
+      summary: Declaratively replaces the resolved flag's entire targeting rule set in the…
+      description: 'The ordered Rules list is applied in
+
+        array order (= evaluation order); an empty or omitted list clears all rules. Segment-scoped
+
+        rules are supported. The replace is atomic. Requires at least Member.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicPutTargetingRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicPutTargetingRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicPutTargetingRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectFlagsByFlagEnvironmentsByEnvTargeting
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}/rules:
+    post:
+      tags:
+      - Feature Flags
+      summary: Creates a targeting rule on the resolved flag in the resolved environment
+      description: 'Requires at
+
+        least Member. Re-fetches via GetTargetingRuleQuery using the id returned
+
+        from CreateTargetingRuleCommand so the response reflects exactly what was
+
+        persisted (e.g. server-assigned priority and condition/group ids).'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateTargetingRuleRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateTargetingRuleRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicCreateTargetingRuleRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicTargetingRuleResponse'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: postApiV1OrgsByOrgProjectsByProjectFlagsByFlagEnvironmentsByEnvRules
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}/rules/{ruleId}:
+    get:
+      tags:
+      - Feature Flags
+      summary: Gets a single targeting rule on the resolved flag in the resolved environment…
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: ruleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicTargetingRuleResponse'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectFlagsByFlagEnvironmentsByEnvRulesByRuleId
+      x-operation-id-source: derived
+    put:
+      tags:
+      - Feature Flags
+      summary: Updates a targeting rule's variation/description/rollout/segment/conditions…
+      description: Requires at least Member.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: ruleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateTargetingRuleRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateTargetingRuleRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateTargetingRuleRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectFlagsByFlagEnvironmentsByEnvRulesByRuleId
+      x-operation-id-source: derived
+    delete:
+      tags:
+      - Feature Flags
+      summary: Deletes a targeting rule from the resolved flag in the resolved environment
+      description: Requires at least Member.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: ruleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: deleteApiV1OrgsByOrgProjectsByProjectFlagsByFlagEnvironmentsByEnvRulesByRuleId
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/environments/{env}/rules/reorder:
+    put:
+      tags:
+      - Feature Flags
+      summary: Reorders the resolved flag's targeting rules in the resolved environment by…
+      description: 'Requires at least Member. Must include every existing rule id exactly once — see the
+
+        type-level remarks on the dup/omission 500 wart.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicReorderRulesRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicReorderRulesRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicReorderRulesRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectFlagsByFlagEnvironmentsByEnvRulesReorder
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations:
+    post:
+      tags:
+      - Feature Flags
+      summary: Adds a variation to the resolved flag
+      description: 'Requires at least Member. Re-fetches the flag via
+
+        GetFeatureFlagQuery and locates the new variation by the id returned from
+
+        AddVariationCommand so the response reflects exactly what was persisted.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicAddVariationRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicAddVariationRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicAddVariationRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicVariationResponse'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: postApiV1OrgsByOrgProjectsByProjectFlagsByFlagVariations
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations/{variationId}:
+    put:
+      tags:
+      - Feature Flags
+      summary: Updates a variation's name/value/description
+      description: Requires at least Member. The variation's key is immutable via this endpoint.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: variationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateVariationRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateVariationRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicUpdateVariationRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectFlagsByFlagVariationsByVariationId
+      x-operation-id-source: derived
+    delete:
+      tags:
+      - Feature Flags
+      summary: Removes a variation from the resolved flag
+      description: 'Requires at least Member. A variation with
+
+        dependents (used as default variation, referenced by a targeting rule, or flagged
+
+        `VARIATION_HAS_DEPENDENTS`) throws the existing
+
+        ValidationException, which the
+
+        exception filter maps to a 400 `validation_failed` envelope — this action doesn''t
+
+        special-case it.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: variationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: deleteApiV1OrgsByOrgProjectsByProjectFlagsByFlagVariationsByVariationId
+      x-operation-id-source: derived
+components:
+  headers:
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
+  schemas:
+    PublicUpdateVariationRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        value:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for
+
+        `PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations/{variationId}`. The
+
+        variation''s key is immutable via this endpoint (mirrors
+
+        `UpdateVariationCommand`, which
+
+        carries no `Key`).'
+    PublicPrerequisiteDto:
+      type: object
+      properties:
+        prerequisiteFlagKey:
+          type:
+          - string
+          - 'null'
+        expectedVariationKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'A single prerequisite entry on a flag''s per-environment config. Maps 1:1 onto
+
+        PrerequisiteDto (read side) and PrerequisiteInput (write side).'
+    PublicConditionResponse:
+      type: object
+      properties:
+        attribute:
+          type:
+          - string
+          - 'null'
+        operator:
+          enum:
+          - Equals
+          - NotEquals
+          - Contains
+          - NotContains
+          - GreaterThan
+          - LessThan
+          - GreaterThanOrEqual
+          - LessThanOrEqual
+          - In
+          - NotIn
+          - MatchesRegex
+          - StartsWith
+          - EndsWith
+          - Before
+          - After
+          - SemverEquals
+          - SemverGreaterThan
+          - SemverGreaterThanOrEqual
+          - SemverLessThan
+          - SemverLessThanOrEqual
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: Equals, NotEquals, Contains, NotContains, GreaterThan, LessThan, GreaterThanOrEqual, LessThanOrEqual, In, NotIn, MatchesRegex, StartsWith, EndsWith, Before, After, SemverEquals, SemverGreaterThan, SemverGreaterThanOrEqual, SemverLessThan, SemverLessThanOrEqual.'
+        values:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        negate:
+          type: boolean
+      additionalProperties: false
+      description: 'A single condition within a PublicConditionGroupResponse. Maps 1:1 onto
+
+        ConditionDto. Operator is a bare wire string naming one of the
+
+        `OperatorType` members (e.g. `"Equals"`, `"In"`).'
+    PublicUpdateTargetingRuleRequest:
+      type: object
+      properties:
+        description:
+          type:
+          - string
+          - 'null'
+        variationId:
+          type: string
+          format: uuid
+        rolloutPercentage:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        userSegmentId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        conditionGroups:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicConditionGroupRequest'
+      additionalProperties: false
+      description: 'Request body for `PUT .../rules/{ruleId}`. Same shape as
+
+        PublicCreateTargetingRuleRequest — see its remarks on operator
+
+        validation/canonicalization, which applies identically here.'
+    PublicCreateTargetingRuleRequest:
+      type: object
+      properties:
+        description:
+          type:
+          - string
+          - 'null'
+        variationId:
+          type: string
+          format: uuid
+        rolloutPercentage:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        userSegmentId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        conditionGroups:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicConditionGroupRequest'
+      additionalProperties: false
+      description: 'Request body for `POST .../rules`. The Application-side
+
+        `CreateTargetingRuleDto`/`CreateConditionGroupDto`/`CreateConditionDto` all take
+
+        their `Operator` as a bare string, re-parsed CASE-SENSITIVELY inside
+
+        `CreateTargetingRuleCommandHandler` — `FlagTargetingController`''s mapping helpers
+
+        validate every operator against the enum''s member-name allowlist AND canonicalize the casing
+
+        (e.g. `"in"` → `"In"`) before building the command DTO, so a valid
+
+        case-insensitive match never trips the handler''s strict re-parse.'
+      example:
+        description: North American users get the new flow at 25%.
+        variationId: 0197b6a0-6a1b-7d4f-8c2e-2f3a4b5c6d7e
+        rolloutPercentage: 25
+        conditionGroups:
+        - operator: And
+          conditions:
+          - attribute: country
+            operator: In
+            values:
+            - US
+            - CA
+            negate: false
+    PublicFlagRemovalCandidate:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        reason:
+          type:
+          - string
+          - 'null'
+        treatment:
+          type: boolean
+        status:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One dead flag the Featureflip Flag Cleanup Action should remove, returned by
+
+        `GET .../flags/removal-candidates`. `Treatment` is the kill decision: true → keep the
+
+        flag''s on-branch, false → keep the off-branch. `Status` is the flag''s staleness tier
+
+        (`"Stale"` or `"Dead"`, never `"Active"`) — lets a caller distinguish the two when
+
+        `?staleness=stale` widens the response to include both tiers. This is the ONLY public
+
+        projection of staleness — PublicFlagResponse and PublicFlagListItem
+
+        still omit it by design.'
+    PublicCreateFeatureFlagRequest:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        type:
+          enum:
+          - Boolean
+          - String
+          - Number
+          - Json
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: Boolean, String, Number, Json.'
+        description:
+          type:
+          - string
+          - 'null'
+        tags:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        initialVariations:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicCreateVariationDto'
+        clientSideVisible:
+          type: boolean
+      additionalProperties: false
+      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/flags`. Named distinctly
+
+        from the dashboard''s own `CreateFeatureFlagRequest`
+
+        — see PublicCreateEnvironmentRequest for the
+
+        schemaId-collision rationale (both controllers share one Swagger document). Type
+
+        is passed through verbatim to Type, which itself takes a
+
+        bare string (Boolean/String/Number/Json) rather than the domain enum — invalid values surface
+
+        as the handler''s own validation failure, not a controller-level 400.'
+      example:
+        key: new-checkout-flow
+        name: New Checkout Flow
+        type: Boolean
+        description: Gates the redesigned checkout experience.
+        tags:
+        - checkout
+        - q3-launch
+        initialVariations:
+        - key: 'true'
+          name: Enabled
+          value: 'true'
+          description: Serve the new checkout.
+        - key: 'false'
+          name: Disabled
+          value: 'false'
+          description: Serve the legacy checkout.
+        clientSideVisible: false
+    PublicConditionGroupRequest:
+      type: object
+      properties:
+        operator:
+          enum:
+          - And
+          - Or
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: And, Or.'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicConditionRequest'
+      additionalProperties: false
+      description: Request-side condition group, symmetric with PublicConditionGroupResponse.
+    PublicFlagResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        type:
+          enum:
+          - Boolean
+          - String
+          - Number
+          - Json
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: Boolean, String, Number, Json.'
+        isArchived:
+          type: boolean
+        clientSideVisible:
+          type: boolean
+        tags:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        variations:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicVariationResponse'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'Public detail representation of a feature flag, returned by
+
+        `GET .../flags/{flag}` and the body of a successful create. Drops internal/dashboard-only
+
+        fields present on FeatureFlagDto — notably `ProjectId` (implicit in the
+
+        route) and `Staleness` (an internal analytics signal, not part of the public contract).'
+      example:
+        id: 0197b6a0-5f2a-7c3e-9b4d-1e2f3a4b5c6d
+        key: new-checkout-flow
+        name: New Checkout Flow
+        description: Gates the redesigned checkout experience.
+        type: Boolean
+        isArchived: false
+        clientSideVisible: false
+        tags:
+        - checkout
+        - q3-launch
+        variations:
+        - id: 0197b6a0-6a1b-7d4f-8c2e-2f3a4b5c6d7e
+          key: 'true'
+          name: Enabled
+          value: 'true'
+          description: Serve the new checkout.
+        - id: 0197b6a0-6a1b-7d4f-8c2e-3a4b5c6d7e8f
+          key: 'false'
+          name: Disabled
+          value: 'false'
+          description: Serve the legacy checkout.
+        createdAt: '2026-06-01T12:00:00Z'
+        updatedAt: '2026-06-15T08:30:00Z'
+    PublicTargetingConfigResponse:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+        rules:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicTargetingRuleResponse'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'The full targeting configuration for a flag in a single environment, returned by
+
+        `GET .../targeting`. Maps 1:1 onto TargetingConfigurationDto — including
+
+        its IsEnabled field, which reflects the parent
+
+        `FlagEnvironmentConfiguration.IsEnabled` (whether the flag is on in this environment at
+
+        all), not anything specific to targeting itself.'
+    PublicFlagEnvConfigResponse:
+      type: object
+      properties:
+        environmentId:
+          type: string
+          format: uuid
+        environmentKey:
+          type:
+          - string
+          - 'null'
+        isEnabled:
+          type: boolean
+        defaultVariationId:
+          type: string
+          format: uuid
+        strategy:
+          enum:
+          - SingleVariation
+          - PercentageRollout
+          - TargetedRollout
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: SingleVariation, PercentageRollout, TargetedRollout.'
+        prerequisites:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicPrerequisiteDto'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'Public representation of a flag''s config within a single environment, returned by
+
+        `GET .../flags/{flag}/environments` and `GET .../flags/{flag}/environments/{env}`.
+
+        Drops internal/dashboard-only fields present on FlagEnvironmentConfigurationDto
+
+        — Id (an internal row id, not part of the public
+
+        contract; EnvironmentId is the addressable key), `FeatureFlagId` (implicit
+
+        in the route), the environment''s name/color/sort-order (dashboard display fields — the public
+
+        contract only needs the addressable EnvironmentKey), and `Staleness` (an
+
+        internal analytics signal).'
+      example:
+        environmentId: 0197b69f-2b3c-7d4e-9f5a-6b7c8d9e0f1a
+        environmentKey: production
+        isEnabled: true
+        defaultVariationId: 0197b6a0-6a1b-7d4f-8c2e-3a4b5c6d7e8f
+        strategy: PercentageRollout
+        prerequisites:
+        - prerequisiteFlagKey: checkout-api-enabled
+          expectedVariationKey: 'true'
+    PublicTargetingRuleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        priority:
+          type: integer
+          format: int32
+        description:
+          type:
+          - string
+          - 'null'
+        variationId:
+          type: string
+          format: uuid
+        rolloutPercentage:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        userSegmentId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        conditionGroups:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicConditionGroupResponse'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'A single targeting rule, returned by `GET .../rules/{ruleId}`,
+
+        `POST .../rules` (201 body), and nested within PublicTargetingConfigResponse.
+
+        Maps 1:1 onto TargetingRuleDto, dropping nothing — every field on the
+
+        Application DTO is part of the public contract.'
+      example:
+        id: 0197b6a3-5e6f-7a7b-8c8d-9e0f1a2b3c4d
+        priority: 0
+        description: North American users get the new flow at 25%.
+        variationId: 0197b6a0-6a1b-7d4f-8c2e-2f3a4b5c6d7e
+        rolloutPercentage: 25
+        userSegmentId: 0197b6a1-3c4d-7e5f-8a6b-7c8d9e0f1a2b
+        conditionGroups:
+        - operator: And
+          conditions:
+          - attribute: country
+            operator: In
+            values:
+            - US
+            - CA
+            negate: false
+    PublicToggleFlagRequest:
+      type: object
+      properties:
+        enabled:
+          type:
+          - boolean
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for `POST .../flags/{flag}/environments/{env}/toggle`. Named distinctly from
+
+        the dashboard''s own `ToggleFlagInEnvironmentRequest`
+
+        (which uses `IsEnabled`) — the public field is named Enabled per the phase-3c
+
+        contract. Enabled is a NULLABLE `bool?` deliberately: a non-nullable value
+
+        type would bind an omitted/empty body to `false` with no validation error (ASP.NET''s
+
+        implicit-required only covers non-nullable reference types, not value types), silently disabling
+
+        the flag. The controller rejects a null Enabled with a `validation_failed` 400
+
+        so the intent is never ambiguous (#1806).'
+    NextAction:
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    PublicApiErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type:
+          - string
+          - 'null'
+        message:
+          type:
+          - string
+          - 'null'
+        docs_url:
+          type:
+          - string
+          - 'null'
+        fields:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        retry_after:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        did_you_mean:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        next_actions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/NextAction'
+      additionalProperties: false
+      description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
+
+        are frozen snake_case too (`error`, `message`, `docs_url`, `fields`,
+
+        `retry_after`) — the global camelCase naming policy would otherwise emit
+
+        `docsUrl`/`retryAfter`, breaking the published spec. !:JsonPropertyName
+
+        always wins over the policy, so these are pinned explicitly rather than relying on the
+
+        property names already being lowercase for the single-word ones.
+
+        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
+
+        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
+
+        are byte-for-byte unchanged when they''re absent.'
+      example:
+        error: not_found
+        message: Flag 'new-checkout-flw' was not found in project 'checkout'.
+        docs_url: https://featureflip.io/docs/management-api/errors/not_found
+        did_you_mean:
+        - new-checkout-flow
+        next_actions:
+        - method: GET
+          path: /api/v1/orgs/acme/projects/checkout/flags
+    PublicAddVariationRequest:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        value:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for
+
+        `POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations`. Named distinctly
+
+        from the dashboard''s own `AddVariationRequest` —
+
+        see PublicCreateEnvironmentRequest for the schemaId-collision rationale (both
+
+        controllers share one Swagger document).'
+      example:
+        key: express
+        name: Express Checkout
+        value: express
+        description: One-click express checkout variant.
+    PublicFlagListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        type:
+          enum:
+          - Boolean
+          - String
+          - Number
+          - Json
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: Boolean, String, Number, Json.'
+        isArchived:
+          type: boolean
+        clientSideVisible:
+          type: boolean
+        tags:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+      description: 'Public list-item representation of a feature flag, returned by
+
+        `GET .../flags`. Narrower than PublicFlagResponse — drops
+
+        Variations (a summary-only shape upstream) and
+
+        Staleness, matching the "list is narrower than detail"
+
+        split already present on the Application-layer DTOs.'
+    ActionCapability:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+    PublicVariationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        value:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: A single variation on a flag, as returned in Variations.
+      example:
+        id: 0197b6a0-6a1b-7d4f-8c2e-2f3a4b5c6d7e
+        key: 'true'
+        name: Enabled
+        value: 'true'
+        description: Serve the new checkout.
+    PublicConditionRequest:
+      type: object
+      properties:
+        attribute:
+          type:
+          - string
+          - 'null'
+        operator:
+          enum:
+          - Equals
+          - NotEquals
+          - Contains
+          - NotContains
+          - GreaterThan
+          - LessThan
+          - GreaterThanOrEqual
+          - LessThanOrEqual
+          - In
+          - NotIn
+          - MatchesRegex
+          - StartsWith
+          - EndsWith
+          - Before
+          - After
+          - SemverEquals
+          - SemverGreaterThan
+          - SemverGreaterThanOrEqual
+          - SemverLessThan
+          - SemverLessThanOrEqual
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: Equals, NotEquals, Contains, NotContains, GreaterThan, LessThan, GreaterThanOrEqual, LessThanOrEqual, In, NotIn, MatchesRegex, StartsWith, EndsWith, Before, After, SemverEquals, SemverGreaterThan, SemverGreaterThanOrEqual, SemverLessThan, SemverLessThanOrEqual.'
+        values:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        negate:
+          type: boolean
+      additionalProperties: false
+      description: Request-side condition, symmetric with PublicConditionResponse.
+    PublicReorderRulesRequest:
+      type: object
+      properties:
+        ruleIds:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+            format: uuid
+      additionalProperties: false
+      description: 'Request body for `PUT .../rules/reorder`. Must include every existing rule id exactly
+
+        once — `ReorderTargetingRulesCommandHandler` rejects duplicate, omitted, or unknown rule
+
+        ids with `BadRequestException`, surfaced as an HTTP 400 `bad_request` envelope
+
+        carrying the handler''s message.'
+    PublicFlagListItemPagedResult:
+      type: object
+      properties:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicFlagListItem'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+      example:
+        items:
+        - id: 0197b6a0-5f2a-7c3e-9b4d-1e2f3a4b5c6d
+          key: new-checkout-flow
+          name: New Checkout Flow
+          type: Boolean
+          isArchived: false
+          clientSideVisible: false
+          tags:
+          - checkout
+          - q3-launch
+          createdAt: '2026-06-01T12:00:00Z'
+          updatedAt: '2026-06-15T08:30:00Z'
+        next_cursor: MjA
+    PublicFlagRemovalCandidatePagedResult:
+      type: object
+      properties:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicFlagRemovalCandidate'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    PublicPutTargetingRequest:
+      type: object
+      properties:
+        rules:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicCreateTargetingRuleRequest'
+      additionalProperties: false
+      description: 'Request body for `PUT .../targeting` — a declarative full replace of the environment''s
+
+        ordered targeting rule set. Rules are applied in array order (index = priority, so the array
+
+        order IS the evaluation order). Rules is nullable so that an OMITTED `rules`
+
+        field (a body of `{}`) binds successfully instead of failing ASP.NET Core''s implicit
+
+        required-property check on non-nullable reference types — both an omitted `rules` field
+
+        and an explicit empty list (`{ "rules": [] }`) clear all targeting rules for the
+
+        environment. Each element is a PublicCreateTargetingRuleRequest (identical to the
+
+        `POST .../rules` body), so `UserSegmentId` is supported — segment-scoped rules can be
+
+        submitted through this endpoint. The replace is atomic (all-or-nothing): the whole rule set is
+
+        swapped in one transaction, or nothing changes.'
+    PublicConditionGroupResponse:
+      type: object
+      properties:
+        operator:
+          enum:
+          - And
+          - Or
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: And, Or.'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicConditionResponse'
+      additionalProperties: false
+      description: 'A condition group within a PublicTargetingRuleResponse. Maps 1:1 onto
+
+        ConditionGroupDto. Operator is a bare wire string naming one of
+
+        the `ConditionGroupOperator` members (`"And"`/`"Or"`) —
+
+        groups are ANDed together at the rule level; within a group, its conditions combine using
+
+        this operator.'
+    PublicCreateVariationDto:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        value:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'A variation supplied at flag-creation time. Maps 1:1 onto
+
+        CreateVariationDto.'
+    PublicUpdateFlagEnvConfigRequest:
+      type: object
+      properties:
+        defaultVariationId:
+          type: string
+          format: uuid
+        strategy:
+          enum:
+          - SingleVariation
+          - PercentageRollout
+          - TargetedRollout
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: SingleVariation, PercentageRollout, TargetedRollout.'
+        prerequisites:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicPrerequisiteDto'
+      additionalProperties: false
+      description: 'Request body for `PUT .../flags/{flag}/environments/{env}`. Named distinctly from the
+
+        dashboard''s own `UpdateFlagEnvironmentConfigurationRequest`
+
+        — see PublicCreateEnvironmentRequest for the schemaId-collision rationale (both
+
+        controllers share one Swagger document). Strategy is passed through verbatim to
+
+        Strategy
+
+        — the existing command validator name-allowlists it (SingleVariation/PercentageRollout/
+
+        TargetedRollout or null), so an invalid value surfaces as the handler''s own 400, not a
+
+        controller-level guard. A null Prerequisites leaves prerequisites untouched; a
+
+        non-null list replaces them wholesale (mirrors UpdateFlagPrerequisitesCommand''s
+
+        replace-all semantics).'
+      example:
+        defaultVariationId: 0197b6a0-6a1b-7d4f-8c2e-3a4b5c6d7e8f
+        strategy: PercentageRollout
+        prerequisites:
+        - prerequisiteFlagKey: checkout-api-enabled
+          expectedVariationKey: 'true'
+    PublicUpdateFeatureFlagRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        tags:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        clientSideVisible:
+          type:
+          - boolean
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}`. See
+
+        PublicCreateFeatureFlagRequest for why this is named distinctly from the
+
+        dashboard''s `UpdateFeatureFlagRequest`. The flag''s key and type are immutable via this
+
+        endpoint (mirrors `UpdateFeatureFlagCommand`, which has no `Key`/`Type`).'
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      description: JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.
+      name: Authorization
+      in: header

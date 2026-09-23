@@ -1,0 +1,193 @@
+openapi: 3.2.0
+info:
+  title: Featureflip Evaluation Client SDK API
+  description: High-performance feature flag evaluation service for SDKs
+  version: v1
+servers:
+- url: https://eval.featureflip.io
+  description: Production
+security:
+- Bearer: []
+tags:
+- name: Client SDK
+  description: 'Client SDK endpoints for browser-side feature flag evaluation.
+
+    All endpoints require a valid Client SDK key passed via the Authorization header.
+
+    Unlike server SDK endpoints, these evaluate flags server-side and return only values.'
+paths:
+  /v1/client/evaluate:
+    post:
+      tags:
+      - Client SDK
+      summary: Evaluates all client-visible feature flags for the given user context
+      requestBody:
+        description: The evaluation request containing user context attributes.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientEvaluateRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ClientEvaluateRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ClientEvaluateRequest'
+      responses:
+        '200':
+          description: Returns the evaluation results for all client-visible flags.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientEvaluateResponse'
+        '401':
+          description: Client SDK key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`.
+      operationId: postV1ClientEvaluate
+      x-operation-id-source: derived
+  /v1/client/identify:
+    post:
+      tags:
+      - Client SDK
+      summary: Re-identifies the user with a new context, for example after login
+      description: 'Re-evaluates all client-visible flags and returns the updated values. Also updates the
+
+        context on any active SSE connections for this environment.'
+      requestBody:
+        description: The evaluation request containing the new user context attributes.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientEvaluateRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ClientEvaluateRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ClientEvaluateRequest'
+      responses:
+        '200':
+          description: Returns the re-evaluated results for all client-visible flags.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientEvaluateResponse'
+        '401':
+          description: Client SDK key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`.
+      operationId: postV1ClientIdentify
+      x-operation-id-source: derived
+  /v1/client/stream:
+    get:
+      tags:
+      - Client SDK
+      summary: Opens a Server-Sent Events stream for real-time client flag updates
+      description: 'Auth is passed as an `?authorization=csk_...` query parameter because a browser
+
+        EventSource cannot set headers. User context is passed as `?context=base64json`.'
+      parameters:
+      - name: context
+        in: query
+        description: Base64-encoded JSON user context for flag evaluation.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: SSE stream opened successfully.
+        '401':
+          description: Client SDK key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Flag configuration is temporarily unavailable; retry after the interval in `Retry-After`.
+      operationId: getV1ClientStream
+      x-operation-id-source: derived
+components:
+  schemas:
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type:
+          - string
+          - 'null'
+        title:
+          type:
+          - string
+          - 'null'
+        status:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        detail:
+          type:
+          - string
+          - 'null'
+        instance:
+          type:
+          - string
+          - 'null'
+      additionalProperties: {}
+    ClientEvaluateRequest:
+      required:
+      - context
+      type: object
+      properties:
+        context:
+          type:
+          - object
+          - 'null'
+          additionalProperties: {}
+      additionalProperties: false
+    ClientEvaluateResponse:
+      required:
+      - flags
+      type: object
+      properties:
+        flags:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            $ref: '#/components/schemas/ClientFlagValue'
+      additionalProperties: false
+    ClientFlagValue:
+      required:
+      - reason
+      - value
+      - variation
+      type: object
+      properties:
+        value: {}
+        variation:
+          type:
+          - string
+          - 'null'
+        reason:
+          type:
+          - string
+          - 'null'
+        prerequisiteKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      description: SDK Key authorization. Enter your SDK key.
+      name: Authorization
+      in: header
