@@ -2348,20 +2348,19 @@ paths:
       operationId: deleteApiV1OrgsByOrgProjectsByProjectFlagsByFlagVariationsByVariationId
       x-operation-id-source: derived
 components:
-  headers:
-    X-RateLimit-Limit:
-      description: The maximum number of requests permitted per rate-limit window for this caller.
-      schema:
-        type: integer
-    X-RateLimit-Reset:
-      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
-      schema:
-        type: integer
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
-      schema:
-        type: integer
   schemas:
+    NextAction:
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
     PublicUpdateVariationRequest:
       type: object
       properties:
@@ -2387,21 +2386,75 @@ components:
         `UpdateVariationCommand`, which
 
         carries no `Key`).'
-    PublicPrerequisiteDto:
+    PublicFlagListItem:
       type: object
       properties:
-        prerequisiteFlagKey:
+        id:
+          type: string
+          format: uuid
+        key:
           type:
           - string
           - 'null'
-        expectedVariationKey:
+        name:
           type:
           - string
           - 'null'
+        type:
+          enum:
+          - Boolean
+          - String
+          - Number
+          - Json
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: Boolean, String, Number, Json.'
+        isArchived:
+          type: boolean
+        clientSideVisible:
+          type: boolean
+        tags:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       additionalProperties: false
-      description: 'A single prerequisite entry on a flag''s per-environment config. Maps 1:1 onto
+      description: 'Public list-item representation of a feature flag, returned by
 
-        PrerequisiteDto (read side) and PrerequisiteInput (write side).'
+        `GET .../flags`. Narrower than PublicFlagResponse — drops
+
+        Variations (a summary-only shape upstream) and
+
+        Staleness, matching the "list is narrower than detail"
+
+        split already present on the Application-layer DTOs.'
+    PublicConditionGroupRequest:
+      type: object
+      properties:
+        operator:
+          enum:
+          - And
+          - Or
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: And, Or.'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicConditionRequest'
+      additionalProperties: false
+      description: Request-side condition group, symmetric with PublicConditionGroupResponse.
     PublicConditionResponse:
       type: object
       properties:
@@ -2449,6 +2502,24 @@ components:
         ConditionDto. Operator is a bare wire string naming one of the
 
         `OperatorType` members (e.g. `"Equals"`, `"In"`).'
+    PublicReorderRulesRequest:
+      type: object
+      properties:
+        ruleIds:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+            format: uuid
+      additionalProperties: false
+      description: 'Request body for `PUT .../rules/reorder`. Must include every existing rule id exactly
+
+        once — `ReorderTargetingRulesCommandHandler` rejects duplicate, omitted, or unknown rule
+
+        ids with `BadRequestException`, surfaced as an HTTP 400 `bad_request` envelope
+
+        carrying the handler''s message.'
     PublicUpdateTargetingRuleRequest:
       type: object
       properties:
@@ -2481,180 +2552,6 @@ components:
         PublicCreateTargetingRuleRequest — see its remarks on operator
 
         validation/canonicalization, which applies identically here.'
-    PublicCreateTargetingRuleRequest:
-      type: object
-      properties:
-        description:
-          type:
-          - string
-          - 'null'
-        variationId:
-          type: string
-          format: uuid
-        rolloutPercentage:
-          type:
-          - integer
-          - 'null'
-          format: int32
-        userSegmentId:
-          type:
-          - string
-          - 'null'
-          format: uuid
-        conditionGroups:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicConditionGroupRequest'
-      additionalProperties: false
-      description: 'Request body for `POST .../rules`. The Application-side
-
-        `CreateTargetingRuleDto`/`CreateConditionGroupDto`/`CreateConditionDto` all take
-
-        their `Operator` as a bare string, re-parsed CASE-SENSITIVELY inside
-
-        `CreateTargetingRuleCommandHandler` — `FlagTargetingController`''s mapping helpers
-
-        validate every operator against the enum''s member-name allowlist AND canonicalize the casing
-
-        (e.g. `"in"` → `"In"`) before building the command DTO, so a valid
-
-        case-insensitive match never trips the handler''s strict re-parse.'
-      example:
-        description: North American users get the new flow at 25%.
-        variationId: 0197b6a0-6a1b-7d4f-8c2e-2f3a4b5c6d7e
-        rolloutPercentage: 25
-        conditionGroups:
-        - operator: And
-          conditions:
-          - attribute: country
-            operator: In
-            values:
-            - US
-            - CA
-            negate: false
-    PublicFlagRemovalCandidate:
-      type: object
-      properties:
-        key:
-          type:
-          - string
-          - 'null'
-        reason:
-          type:
-          - string
-          - 'null'
-        treatment:
-          type: boolean
-        status:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'One dead flag the Featureflip Flag Cleanup Action should remove, returned by
-
-        `GET .../flags/removal-candidates`. `Treatment` is the kill decision: true → keep the
-
-        flag''s on-branch, false → keep the off-branch. `Status` is the flag''s staleness tier
-
-        (`"Stale"` or `"Dead"`, never `"Active"`) — lets a caller distinguish the two when
-
-        `?staleness=stale` widens the response to include both tiers. This is the ONLY public
-
-        projection of staleness — PublicFlagResponse and PublicFlagListItem
-
-        still omit it by design.'
-    PublicCreateFeatureFlagRequest:
-      type: object
-      properties:
-        key:
-          type:
-          - string
-          - 'null'
-        name:
-          type:
-          - string
-          - 'null'
-        type:
-          enum:
-          - Boolean
-          - String
-          - Number
-          - Json
-          type:
-          - string
-          - 'null'
-          description: 'Allowed values: Boolean, String, Number, Json.'
-        description:
-          type:
-          - string
-          - 'null'
-        tags:
-          type:
-          - array
-          - 'null'
-          items:
-            type: string
-        initialVariations:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicCreateVariationDto'
-        clientSideVisible:
-          type: boolean
-      additionalProperties: false
-      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/flags`. Named distinctly
-
-        from the dashboard''s own `CreateFeatureFlagRequest`
-
-        — see PublicCreateEnvironmentRequest for the
-
-        schemaId-collision rationale (both controllers share one Swagger document). Type
-
-        is passed through verbatim to Type, which itself takes a
-
-        bare string (Boolean/String/Number/Json) rather than the domain enum — invalid values surface
-
-        as the handler''s own validation failure, not a controller-level 400.'
-      example:
-        key: new-checkout-flow
-        name: New Checkout Flow
-        type: Boolean
-        description: Gates the redesigned checkout experience.
-        tags:
-        - checkout
-        - q3-launch
-        initialVariations:
-        - key: 'true'
-          name: Enabled
-          value: 'true'
-          description: Serve the new checkout.
-        - key: 'false'
-          name: Disabled
-          value: 'false'
-          description: Serve the legacy checkout.
-        clientSideVisible: false
-    PublicConditionGroupRequest:
-      type: object
-      properties:
-        operator:
-          enum:
-          - And
-          - Or
-          type:
-          - string
-          - 'null'
-          description: 'Allowed values: And, Or.'
-        conditions:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicConditionRequest'
-      additionalProperties: false
-      description: Request-side condition group, symmetric with PublicConditionGroupResponse.
     PublicFlagResponse:
       type: object
       properties:
@@ -2742,101 +2639,61 @@ components:
           description: Serve the legacy checkout.
         createdAt: '2026-06-01T12:00:00Z'
         updatedAt: '2026-06-15T08:30:00Z'
-    PublicTargetingConfigResponse:
+    PublicPutTargetingRequest:
       type: object
       properties:
-        isEnabled:
-          type: boolean
         rules:
           type:
           - array
           - 'null'
           items:
-            $ref: '#/components/schemas/PublicTargetingRuleResponse'
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+            $ref: '#/components/schemas/PublicCreateTargetingRuleRequest'
       additionalProperties: false
-      description: 'The full targeting configuration for a flag in a single environment, returned by
+      description: 'Request body for `PUT .../targeting` — a declarative full replace of the environment''s
 
-        `GET .../targeting`. Maps 1:1 onto TargetingConfigurationDto — including
+        ordered targeting rule set. Rules are applied in array order (index = priority, so the array
 
-        its IsEnabled field, which reflects the parent
+        order IS the evaluation order). Rules is nullable so that an OMITTED `rules`
 
-        `FlagEnvironmentConfiguration.IsEnabled` (whether the flag is on in this environment at
+        field (a body of `{}`) binds successfully instead of failing ASP.NET Core''s implicit
 
-        all), not anything specific to targeting itself.'
-    PublicFlagEnvConfigResponse:
+        required-property check on non-nullable reference types — both an omitted `rules` field
+
+        and an explicit empty list (`{ "rules": [] }`) clear all targeting rules for the
+
+        environment. Each element is a PublicCreateTargetingRuleRequest (identical to the
+
+        `POST .../rules` body), so `UserSegmentId` is supported — segment-scoped rules can be
+
+        submitted through this endpoint. The replace is atomic (all-or-nothing): the whole rule set is
+
+        swapped in one transaction, or nothing changes.'
+    PublicCreateVariationDto:
       type: object
       properties:
-        environmentId:
-          type: string
-          format: uuid
-        environmentKey:
+        key:
           type:
           - string
           - 'null'
-        isEnabled:
-          type: boolean
-        defaultVariationId:
-          type: string
-          format: uuid
-        strategy:
-          enum:
-          - SingleVariation
-          - PercentageRollout
-          - TargetedRollout
+        name:
           type:
           - string
           - 'null'
-          description: 'Allowed values: SingleVariation, PercentageRollout, TargetedRollout.'
-        prerequisites:
+        value:
           type:
-          - array
+          - string
           - 'null'
-          items:
-            $ref: '#/components/schemas/PublicPrerequisiteDto'
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+        description:
+          type:
+          - string
+          - 'null'
       additionalProperties: false
-      description: 'Public representation of a flag''s config within a single environment, returned by
+      description: 'A variation supplied at flag-creation time. Maps 1:1 onto
 
-        `GET .../flags/{flag}/environments` and `GET .../flags/{flag}/environments/{env}`.
-
-        Drops internal/dashboard-only fields present on FlagEnvironmentConfigurationDto
-
-        — Id (an internal row id, not part of the public
-
-        contract; EnvironmentId is the addressable key), `FeatureFlagId` (implicit
-
-        in the route), the environment''s name/color/sort-order (dashboard display fields — the public
-
-        contract only needs the addressable EnvironmentKey), and `Staleness` (an
-
-        internal analytics signal).'
-      example:
-        environmentId: 0197b69f-2b3c-7d4e-9f5a-6b7c8d9e0f1a
-        environmentKey: production
-        isEnabled: true
-        defaultVariationId: 0197b6a0-6a1b-7d4f-8c2e-3a4b5c6d7e8f
-        strategy: PercentageRollout
-        prerequisites:
-        - prerequisiteFlagKey: checkout-api-enabled
-          expectedVariationKey: 'true'
-    PublicTargetingRuleResponse:
+        CreateVariationDto.'
+    PublicCreateTargetingRuleRequest:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-        priority:
-          type: integer
-          format: int32
         description:
           type:
           - string
@@ -2859,27 +2716,25 @@ components:
           - array
           - 'null'
           items:
-            $ref: '#/components/schemas/PublicConditionGroupResponse'
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+            $ref: '#/components/schemas/PublicConditionGroupRequest'
       additionalProperties: false
-      description: 'A single targeting rule, returned by `GET .../rules/{ruleId}`,
+      description: 'Request body for `POST .../rules`. The Application-side
 
-        `POST .../rules` (201 body), and nested within PublicTargetingConfigResponse.
+        `CreateTargetingRuleDto`/`CreateConditionGroupDto`/`CreateConditionDto` all take
 
-        Maps 1:1 onto TargetingRuleDto, dropping nothing — every field on the
+        their `Operator` as a bare string, re-parsed CASE-SENSITIVELY inside
 
-        Application DTO is part of the public contract.'
+        `CreateTargetingRuleCommandHandler` — `FlagTargetingController`''s mapping helpers
+
+        validate every operator against the enum''s member-name allowlist AND canonicalize the casing
+
+        (e.g. `"in"` → `"In"`) before building the command DTO, so a valid
+
+        case-insensitive match never trips the handler''s strict re-parse.'
       example:
-        id: 0197b6a3-5e6f-7a7b-8c8d-9e0f1a2b3c4d
-        priority: 0
         description: North American users get the new flow at 25%.
         variationId: 0197b6a0-6a1b-7d4f-8c2e-2f3a4b5c6d7e
         rolloutPercentage: 25
-        userSegmentId: 0197b6a1-3c4d-7e5f-8a6b-7c8d9e0f1a2b
         conditionGroups:
         - operator: And
           conditions:
@@ -2889,41 +2744,6 @@ components:
             - US
             - CA
             negate: false
-    PublicToggleFlagRequest:
-      type: object
-      properties:
-        enabled:
-          type:
-          - boolean
-          - 'null'
-      additionalProperties: false
-      description: 'Request body for `POST .../flags/{flag}/environments/{env}/toggle`. Named distinctly from
-
-        the dashboard''s own `ToggleFlagInEnvironmentRequest`
-
-        (which uses `IsEnabled`) — the public field is named Enabled per the phase-3c
-
-        contract. Enabled is a NULLABLE `bool?` deliberately: a non-nullable value
-
-        type would bind an omitted/empty body to `false` with no validation error (ASP.NET''s
-
-        implicit-required only covers non-nullable reference types, not value types), silently disabling
-
-        the flag. The controller rejects a null Enabled with a `validation_failed` 400
-
-        so the intent is never ambiguous (#1806).'
-    NextAction:
-      type: object
-      properties:
-        method:
-          type:
-          - string
-          - 'null'
-        path:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
     PublicApiErrorEnvelope:
       type: object
       properties:
@@ -2991,101 +2811,6 @@ components:
         next_actions:
         - method: GET
           path: /api/v1/orgs/acme/projects/checkout/flags
-    PublicAddVariationRequest:
-      type: object
-      properties:
-        key:
-          type:
-          - string
-          - 'null'
-        name:
-          type:
-          - string
-          - 'null'
-        value:
-          type:
-          - string
-          - 'null'
-        description:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'Request body for
-
-        `POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations`. Named distinctly
-
-        from the dashboard''s own `AddVariationRequest` —
-
-        see PublicCreateEnvironmentRequest for the schemaId-collision rationale (both
-
-        controllers share one Swagger document).'
-      example:
-        key: express
-        name: Express Checkout
-        value: express
-        description: One-click express checkout variant.
-    PublicFlagListItem:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        key:
-          type:
-          - string
-          - 'null'
-        name:
-          type:
-          - string
-          - 'null'
-        type:
-          enum:
-          - Boolean
-          - String
-          - Number
-          - Json
-          type:
-          - string
-          - 'null'
-          description: 'Allowed values: Boolean, String, Number, Json.'
-        isArchived:
-          type: boolean
-        clientSideVisible:
-          type: boolean
-        tags:
-          type:
-          - array
-          - 'null'
-          items:
-            type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      additionalProperties: false
-      description: 'Public list-item representation of a feature flag, returned by
-
-        `GET .../flags`. Narrower than PublicFlagResponse — drops
-
-        Variations (a summary-only shape upstream) and
-
-        Staleness, matching the "list is narrower than detail"
-
-        split already present on the Application-layer DTOs.'
-    ActionCapability:
-      type: object
-      properties:
-        allowed:
-          type: boolean
-        reason:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
     PublicVariationResponse:
       type: object
       properties:
@@ -3121,67 +2846,6 @@ components:
         name: Enabled
         value: 'true'
         description: Serve the new checkout.
-    PublicConditionRequest:
-      type: object
-      properties:
-        attribute:
-          type:
-          - string
-          - 'null'
-        operator:
-          enum:
-          - Equals
-          - NotEquals
-          - Contains
-          - NotContains
-          - GreaterThan
-          - LessThan
-          - GreaterThanOrEqual
-          - LessThanOrEqual
-          - In
-          - NotIn
-          - MatchesRegex
-          - StartsWith
-          - EndsWith
-          - Before
-          - After
-          - SemverEquals
-          - SemverGreaterThan
-          - SemverGreaterThanOrEqual
-          - SemverLessThan
-          - SemverLessThanOrEqual
-          type:
-          - string
-          - 'null'
-          description: 'Allowed values: Equals, NotEquals, Contains, NotContains, GreaterThan, LessThan, GreaterThanOrEqual, LessThanOrEqual, In, NotIn, MatchesRegex, StartsWith, EndsWith, Before, After, SemverEquals, SemverGreaterThan, SemverGreaterThanOrEqual, SemverLessThan, SemverLessThanOrEqual.'
-        values:
-          type:
-          - array
-          - 'null'
-          items:
-            type: string
-        negate:
-          type: boolean
-      additionalProperties: false
-      description: Request-side condition, symmetric with PublicConditionResponse.
-    PublicReorderRulesRequest:
-      type: object
-      properties:
-        ruleIds:
-          type:
-          - array
-          - 'null'
-          items:
-            type: string
-            format: uuid
-      additionalProperties: false
-      description: 'Request body for `PUT .../rules/reorder`. Must include every existing rule id exactly
-
-        once — `ReorderTargetingRulesCommandHandler` rejects duplicate, omitted, or unknown rule
-
-        ids with `BadRequestException`, surfaced as an HTTP 400 `bad_request` envelope
-
-        carrying the handler''s message.'
     PublicFlagListItemPagedResult:
       type: object
       properties:
@@ -3220,93 +2884,33 @@ components:
           createdAt: '2026-06-01T12:00:00Z'
           updatedAt: '2026-06-15T08:30:00Z'
         next_cursor: MjA
-    PublicFlagRemovalCandidatePagedResult:
+    PublicToggleFlagRequest:
       type: object
       properties:
-        items:
+        enabled:
           type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicFlagRemovalCandidate'
-        next_cursor:
-          type:
-          - string
+          - boolean
           - 'null'
       additionalProperties: false
-      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+      description: 'Request body for `POST .../flags/{flag}/environments/{env}/toggle`. Named distinctly from
 
-        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+        the dashboard''s own `ToggleFlagInEnvironmentRequest`
 
-        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
-    PublicPutTargetingRequest:
+        (which uses `IsEnabled`) — the public field is named Enabled per the phase-3c
+
+        contract. Enabled is a NULLABLE `bool?` deliberately: a non-nullable value
+
+        type would bind an omitted/empty body to `false` with no validation error (ASP.NET''s
+
+        implicit-required only covers non-nullable reference types, not value types), silently disabling
+
+        the flag. The controller rejects a null Enabled with a `validation_failed` 400
+
+        so the intent is never ambiguous (#1806).'
+    PublicUpdateFeatureFlagRequest:
       type: object
       properties:
-        rules:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicCreateTargetingRuleRequest'
-      additionalProperties: false
-      description: 'Request body for `PUT .../targeting` — a declarative full replace of the environment''s
-
-        ordered targeting rule set. Rules are applied in array order (index = priority, so the array
-
-        order IS the evaluation order). Rules is nullable so that an OMITTED `rules`
-
-        field (a body of `{}`) binds successfully instead of failing ASP.NET Core''s implicit
-
-        required-property check on non-nullable reference types — both an omitted `rules` field
-
-        and an explicit empty list (`{ "rules": [] }`) clear all targeting rules for the
-
-        environment. Each element is a PublicCreateTargetingRuleRequest (identical to the
-
-        `POST .../rules` body), so `UserSegmentId` is supported — segment-scoped rules can be
-
-        submitted through this endpoint. The replace is atomic (all-or-nothing): the whole rule set is
-
-        swapped in one transaction, or nothing changes.'
-    PublicConditionGroupResponse:
-      type: object
-      properties:
-        operator:
-          enum:
-          - And
-          - Or
-          type:
-          - string
-          - 'null'
-          description: 'Allowed values: And, Or.'
-        conditions:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicConditionResponse'
-      additionalProperties: false
-      description: 'A condition group within a PublicTargetingRuleResponse. Maps 1:1 onto
-
-        ConditionGroupDto. Operator is a bare wire string naming one of
-
-        the `ConditionGroupOperator` members (`"And"`/`"Or"`) —
-
-        groups are ANDed together at the rule level; within a group, its conditions combine using
-
-        this operator.'
-    PublicCreateVariationDto:
-      type: object
-      properties:
-        key:
-          type:
-          - string
-          - 'null'
         name:
-          type:
-          - string
-          - 'null'
-        value:
           type:
           - string
           - 'null'
@@ -3314,10 +2918,157 @@ components:
           type:
           - string
           - 'null'
+        tags:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        clientSideVisible:
+          type:
+          - boolean
+          - 'null'
       additionalProperties: false
-      description: 'A variation supplied at flag-creation time. Maps 1:1 onto
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}`. See
 
-        CreateVariationDto.'
+        PublicCreateFeatureFlagRequest for why this is named distinctly from the
+
+        dashboard''s `UpdateFeatureFlagRequest`. The flag''s key and type are immutable via this
+
+        endpoint (mirrors `UpdateFeatureFlagCommand`, which has no `Key`/`Type`).'
+    PublicFlagRemovalCandidate:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        reason:
+          type:
+          - string
+          - 'null'
+        treatment:
+          type: boolean
+        status:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One dead flag the Featureflip Flag Cleanup Action should remove, returned by
+
+        `GET .../flags/removal-candidates`. `Treatment` is the kill decision: true → keep the
+
+        flag''s on-branch, false → keep the off-branch. `Status` is the flag''s staleness tier
+
+        (`"Stale"` or `"Dead"`, never `"Active"`) — lets a caller distinguish the two when
+
+        `?staleness=stale` widens the response to include both tiers. This is the ONLY public
+
+        projection of staleness — PublicFlagResponse and PublicFlagListItem
+
+        still omit it by design.'
+    PublicPrerequisiteDto:
+      type: object
+      properties:
+        prerequisiteFlagKey:
+          type:
+          - string
+          - 'null'
+        expectedVariationKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'A single prerequisite entry on a flag''s per-environment config. Maps 1:1 onto
+
+        PrerequisiteDto (read side) and PrerequisiteInput (write side).'
+    PublicTargetingRuleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        priority:
+          type: integer
+          format: int32
+        description:
+          type:
+          - string
+          - 'null'
+        variationId:
+          type: string
+          format: uuid
+        rolloutPercentage:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        userSegmentId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        conditionGroups:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicConditionGroupResponse'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'A single targeting rule, returned by `GET .../rules/{ruleId}`,
+
+        `POST .../rules` (201 body), and nested within PublicTargetingConfigResponse.
+
+        Maps 1:1 onto TargetingRuleDto, dropping nothing — every field on the
+
+        Application DTO is part of the public contract.'
+      example:
+        id: 0197b6a3-5e6f-7a7b-8c8d-9e0f1a2b3c4d
+        priority: 0
+        description: North American users get the new flow at 25%.
+        variationId: 0197b6a0-6a1b-7d4f-8c2e-2f3a4b5c6d7e
+        rolloutPercentage: 25
+        userSegmentId: 0197b6a1-3c4d-7e5f-8a6b-7c8d9e0f1a2b
+        conditionGroups:
+        - operator: And
+          conditions:
+          - attribute: country
+            operator: In
+            values:
+            - US
+            - CA
+            negate: false
+    PublicTargetingConfigResponse:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+        rules:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicTargetingRuleResponse'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'The full targeting configuration for a flag in a single environment, returned by
+
+        `GET .../targeting`. Maps 1:1 onto TargetingConfigurationDto — including
+
+        its IsEnabled field, which reflects the parent
+
+        `FlagEnvironmentConfiguration.IsEnabled` (whether the flag is on in this environment at
+
+        all), not anything specific to targeting itself.'
     PublicUpdateFlagEnvConfigRequest:
       type: object
       properties:
@@ -3365,13 +3116,142 @@ components:
         prerequisites:
         - prerequisiteFlagKey: checkout-api-enabled
           expectedVariationKey: 'true'
-    PublicUpdateFeatureFlagRequest:
+    PublicConditionRequest:
       type: object
       properties:
+        attribute:
+          type:
+          - string
+          - 'null'
+        operator:
+          enum:
+          - Equals
+          - NotEquals
+          - Contains
+          - NotContains
+          - GreaterThan
+          - LessThan
+          - GreaterThanOrEqual
+          - LessThanOrEqual
+          - In
+          - NotIn
+          - MatchesRegex
+          - StartsWith
+          - EndsWith
+          - Before
+          - After
+          - SemverEquals
+          - SemverGreaterThan
+          - SemverGreaterThanOrEqual
+          - SemverLessThan
+          - SemverLessThanOrEqual
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: Equals, NotEquals, Contains, NotContains, GreaterThan, LessThan, GreaterThanOrEqual, LessThanOrEqual, In, NotIn, MatchesRegex, StartsWith, EndsWith, Before, After, SemverEquals, SemverGreaterThan, SemverGreaterThanOrEqual, SemverLessThan, SemverLessThanOrEqual.'
+        values:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        negate:
+          type: boolean
+      additionalProperties: false
+      description: Request-side condition, symmetric with PublicConditionResponse.
+    PublicConditionGroupResponse:
+      type: object
+      properties:
+        operator:
+          enum:
+          - And
+          - Or
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: And, Or.'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicConditionResponse'
+      additionalProperties: false
+      description: 'A condition group within a PublicTargetingRuleResponse. Maps 1:1 onto
+
+        ConditionGroupDto. Operator is a bare wire string naming one of
+
+        the `ConditionGroupOperator` members (`"And"`/`"Or"`) —
+
+        groups are ANDed together at the rule level; within a group, its conditions combine using
+
+        this operator.'
+    ActionCapability:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+    PublicAddVariationRequest:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
         name:
           type:
           - string
           - 'null'
+        value:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for
+
+        `POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations`. Named distinctly
+
+        from the dashboard''s own `AddVariationRequest` —
+
+        see PublicCreateEnvironmentRequest for the schemaId-collision rationale (both
+
+        controllers share one Swagger document).'
+      example:
+        key: express
+        name: Express Checkout
+        value: express
+        description: One-click express checkout variant.
+    PublicCreateFeatureFlagRequest:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        type:
+          enum:
+          - Boolean
+          - String
+          - Number
+          - Json
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: Boolean, String, Number, Json.'
         description:
           type:
           - string
@@ -3382,18 +3262,138 @@ components:
           - 'null'
           items:
             type: string
-        clientSideVisible:
+        initialVariations:
           type:
-          - boolean
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicCreateVariationDto'
+        clientSideVisible:
+          type: boolean
+      additionalProperties: false
+      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/flags`. Named distinctly
+
+        from the dashboard''s own `CreateFeatureFlagRequest`
+
+        — see PublicCreateEnvironmentRequest for the
+
+        schemaId-collision rationale (both controllers share one Swagger document). Type
+
+        is passed through verbatim to Type, which itself takes a
+
+        bare string (Boolean/String/Number/Json) rather than the domain enum — invalid values surface
+
+        as the handler''s own validation failure, not a controller-level 400.'
+      example:
+        key: new-checkout-flow
+        name: New Checkout Flow
+        type: Boolean
+        description: Gates the redesigned checkout experience.
+        tags:
+        - checkout
+        - q3-launch
+        initialVariations:
+        - key: 'true'
+          name: Enabled
+          value: 'true'
+          description: Serve the new checkout.
+        - key: 'false'
+          name: Disabled
+          value: 'false'
+          description: Serve the legacy checkout.
+        clientSideVisible: false
+    PublicFlagRemovalCandidatePagedResult:
+      type: object
+      properties:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicFlagRemovalCandidate'
+        next_cursor:
+          type:
+          - string
           - 'null'
       additionalProperties: false
-      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}`. See
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
 
-        PublicCreateFeatureFlagRequest for why this is named distinctly from the
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
 
-        dashboard''s `UpdateFeatureFlagRequest`. The flag''s key and type are immutable via this
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    PublicFlagEnvConfigResponse:
+      type: object
+      properties:
+        environmentId:
+          type: string
+          format: uuid
+        environmentKey:
+          type:
+          - string
+          - 'null'
+        isEnabled:
+          type: boolean
+        defaultVariationId:
+          type: string
+          format: uuid
+        strategy:
+          enum:
+          - SingleVariation
+          - PercentageRollout
+          - TargetedRollout
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: SingleVariation, PercentageRollout, TargetedRollout.'
+        prerequisites:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicPrerequisiteDto'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'Public representation of a flag''s config within a single environment, returned by
 
-        endpoint (mirrors `UpdateFeatureFlagCommand`, which has no `Key`/`Type`).'
+        `GET .../flags/{flag}/environments` and `GET .../flags/{flag}/environments/{env}`.
+
+        Drops internal/dashboard-only fields present on FlagEnvironmentConfigurationDto
+
+        — Id (an internal row id, not part of the public
+
+        contract; EnvironmentId is the addressable key), `FeatureFlagId` (implicit
+
+        in the route), the environment''s name/color/sort-order (dashboard display fields — the public
+
+        contract only needs the addressable EnvironmentKey), and `Staleness` (an
+
+        internal analytics signal).'
+      example:
+        environmentId: 0197b69f-2b3c-7d4e-9f5a-6b7c8d9e0f1a
+        environmentKey: production
+        isEnabled: true
+        defaultVariationId: 0197b6a0-6a1b-7d4f-8c2e-3a4b5c6d7e8f
+        strategy: PercentageRollout
+        prerequisites:
+        - prerequisiteFlagKey: checkout-api-enabled
+          expectedVariationKey: 'true'
+  headers:
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
   securitySchemes:
     Bearer:
       type: apiKey

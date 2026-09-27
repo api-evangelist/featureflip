@@ -72,19 +72,6 @@ paths:
       operationId: getApiV1Me
       x-operation-id-source: derived
 components:
-  headers:
-    X-RateLimit-Limit:
-      description: The maximum number of requests permitted per rate-limit window for this caller.
-      schema:
-        type: integer
-    X-RateLimit-Reset:
-      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
-      schema:
-        type: integer
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
-      schema:
-        type: integer
   schemas:
     NextAction:
       type: object
@@ -98,6 +85,60 @@ components:
           - string
           - 'null'
       additionalProperties: false
+    MeResponse:
+      type: object
+      properties:
+        type:
+          type:
+          - string
+          - 'null'
+        id:
+          type: string
+          format: uuid
+        name:
+          type:
+          - string
+          - 'null'
+        email:
+          type:
+          - string
+          - 'null'
+        emailVerified:
+          type:
+          - boolean
+          - 'null'
+        organizationId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        role:
+          type:
+          - string
+          - 'null'
+        projectScope:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+            format: uuid
+      additionalProperties: false
+      description: 'The authenticated caller''s identity, returned by `GET /api/v1/me`. The public API
+
+        authenticates two kinds of principal, so this is a `type`-discriminated shape.
+
+        A `"user"` caller (a session/JWT user or a personal access token, `ffp_...`) carries
+
+        `email` + `emailVerified`. A `"service_token"` caller (`ffs_...`) has no
+
+        backing user row, so it carries `organizationId` + `role` + `projectScope` (the
+
+        token''s org, its role in that org, and its project allowlist) instead. The type-inapplicable
+
+        fields are omitted from the response body. `projectScope` is omitted for an unrestricted
+
+        service token (access to every project), never an empty list.'
     PublicApiErrorEnvelope:
       type: object
       properties:
@@ -165,60 +206,19 @@ components:
         next_actions:
         - method: GET
           path: /api/v1/orgs/acme/projects/checkout/flags
-    MeResponse:
-      type: object
-      properties:
-        type:
-          type:
-          - string
-          - 'null'
-        id:
-          type: string
-          format: uuid
-        name:
-          type:
-          - string
-          - 'null'
-        email:
-          type:
-          - string
-          - 'null'
-        emailVerified:
-          type:
-          - boolean
-          - 'null'
-        organizationId:
-          type:
-          - string
-          - 'null'
-          format: uuid
-        role:
-          type:
-          - string
-          - 'null'
-        projectScope:
-          type:
-          - array
-          - 'null'
-          items:
-            type: string
-            format: uuid
-      additionalProperties: false
-      description: 'The authenticated caller''s identity, returned by `GET /api/v1/me`. The public API
-
-        authenticates two kinds of principal, so this is a `type`-discriminated shape.
-
-        A `"user"` caller (a session/JWT user or a personal access token, `ffp_...`) carries
-
-        `email` + `emailVerified`. A `"service_token"` caller (`ffs_...`) has no
-
-        backing user row, so it carries `organizationId` + `role` + `projectScope` (the
-
-        token''s org, its role in that org, and its project allowlist) instead. The type-inapplicable
-
-        fields are omitted from the response body. `projectScope` is omitted for an unrestricted
-
-        service token (access to every project), never an empty list.'
+  headers:
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
   securitySchemes:
     Bearer:
       type: apiKey

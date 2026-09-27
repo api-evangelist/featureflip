@@ -116,6 +116,39 @@ paths:
       x-operation-id-source: derived
 components:
   schemas:
+    ClientEvaluateResponse:
+      required:
+      - flags
+      type: object
+      properties:
+        flags:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            $ref: '#/components/schemas/ClientFlagValue'
+      additionalProperties: false
+    ClientFlagValue:
+      required:
+      - reason
+      - value
+      - variation
+      type: object
+      properties:
+        value: {}
+        variation:
+          type:
+          - string
+          - 'null'
+        reason:
+          type:
+          - string
+          - 'null'
+        prerequisiteKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
     ProblemDetails:
       type: object
       properties:
@@ -151,39 +184,6 @@ components:
           - object
           - 'null'
           additionalProperties: {}
-      additionalProperties: false
-    ClientEvaluateResponse:
-      required:
-      - flags
-      type: object
-      properties:
-        flags:
-          type:
-          - object
-          - 'null'
-          additionalProperties:
-            $ref: '#/components/schemas/ClientFlagValue'
-      additionalProperties: false
-    ClientFlagValue:
-      required:
-      - reason
-      - value
-      - variation
-      type: object
-      properties:
-        value: {}
-        variation:
-          type:
-          - string
-          - 'null'
-        reason:
-          type:
-          - string
-          - 'null'
-        prerequisiteKey:
-          type:
-          - string
-          - 'null'
       additionalProperties: false
   securitySchemes:
     Bearer:
