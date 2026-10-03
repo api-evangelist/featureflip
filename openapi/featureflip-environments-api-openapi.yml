@@ -484,7 +484,53 @@ paths:
       operationId: deleteApiV1OrgsByOrgProjectsByProjectEnvironmentsByEnv
       x-operation-id-source: derived
 components:
+  headers:
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
   schemas:
+    PublicCreateEnvironmentRequest:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        color:
+          type:
+          - string
+          - 'null'
+        sortOrder:
+          type: integer
+          format: int32
+      additionalProperties: false
+      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/environments`. Named
+
+        distinctly from the dashboard''s own `CreateEnvironmentRequest`
+
+        — both controllers share one Swagger document (see `Program.cs`''s `AddSwaggerGen``DocInclusionPredicate` override), and Swashbuckle''s default schemaId is the bare type
+
+        name, so an identical name in either namespace throws a schemaId collision at
+
+        `--export-openapi` time.'
+      example:
+        key: production
+        name: Production
+        color: '#16A34A'
+        sortOrder: 2
     NextAction:
       type: object
       properties:
@@ -547,37 +593,6 @@ components:
         name: Production
         color: '#16A34A'
         sortOrder: 2
-    PublicUpdateEnvironmentRequest:
-      type: object
-      properties:
-        name:
-          type:
-          - string
-          - 'null'
-        color:
-          type:
-          - string
-          - 'null'
-        sortOrder:
-          type: integer
-          format: int32
-      additionalProperties: false
-      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/environments/{env}`. See
-
-        PublicCreateEnvironmentRequest for why this is named distinctly from the
-
-        dashboard''s `UpdateEnvironmentRequest`.'
-    ActionCapability:
-      type: object
-      properties:
-        allowed:
-          type: boolean
-        reason:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
     PublicEnvironmentResponsePagedResult:
       type: object
       properties:
@@ -602,6 +617,37 @@ components:
         page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
 
         `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    ActionCapability:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+    PublicUpdateEnvironmentRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        color:
+          type:
+          - string
+          - 'null'
+        sortOrder:
+          type: integer
+          format: int32
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/environments/{env}`. See
+
+        PublicCreateEnvironmentRequest for why this is named distinctly from the
+
+        dashboard''s `UpdateEnvironmentRequest`.'
     PublicApiErrorEnvelope:
       type: object
       properties:
@@ -669,52 +715,6 @@ components:
         next_actions:
         - method: GET
           path: /api/v1/orgs/acme/projects/checkout/flags
-    PublicCreateEnvironmentRequest:
-      type: object
-      properties:
-        key:
-          type:
-          - string
-          - 'null'
-        name:
-          type:
-          - string
-          - 'null'
-        color:
-          type:
-          - string
-          - 'null'
-        sortOrder:
-          type: integer
-          format: int32
-      additionalProperties: false
-      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/environments`. Named
-
-        distinctly from the dashboard''s own `CreateEnvironmentRequest`
-
-        — both controllers share one Swagger document (see `Program.cs`''s `AddSwaggerGen``DocInclusionPredicate` override), and Swashbuckle''s default schemaId is the bare type
-
-        name, so an identical name in either namespace throws a schemaId collision at
-
-        `--export-openapi` time.'
-      example:
-        key: production
-        name: Production
-        color: '#16A34A'
-        sortOrder: 2
-  headers:
-    X-RateLimit-Reset:
-      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
-      schema:
-        type: integer
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
-      schema:
-        type: integer
-    X-RateLimit-Limit:
-      description: The maximum number of requests permitted per rate-limit window for this caller.
-      schema:
-        type: integer
   securitySchemes:
     Bearer:
       type: apiKey

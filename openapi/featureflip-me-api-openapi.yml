@@ -72,19 +72,20 @@ paths:
       operationId: getApiV1Me
       x-operation-id-source: derived
 components:
+  headers:
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
   schemas:
-    NextAction:
-      type: object
-      properties:
-        method:
-          type:
-          - string
-          - 'null'
-        path:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
     MeResponse:
       type: object
       properties:
@@ -139,6 +140,18 @@ components:
         fields are omitted from the response body. `projectScope` is omitted for an unrestricted
 
         service token (access to every project), never an empty list.'
+    NextAction:
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
     PublicApiErrorEnvelope:
       type: object
       properties:
@@ -206,19 +219,6 @@ components:
         next_actions:
         - method: GET
           path: /api/v1/orgs/acme/projects/checkout/flags
-  headers:
-    X-RateLimit-Reset:
-      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
-      schema:
-        type: integer
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
-      schema:
-        type: integer
-    X-RateLimit-Limit:
-      description: The maximum number of requests permitted per rate-limit window for this caller.
-      schema:
-        type: integer
   securitySchemes:
     Bearer:
       type: apiKey

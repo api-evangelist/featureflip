@@ -515,19 +515,82 @@ paths:
       operationId: deleteApiV1OrgsByOrgProjectsByProjectSegmentsBySegment
       x-operation-id-source: derived
 components:
+  headers:
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
   schemas:
-    NextAction:
+    PublicCreateSegmentRequest:
       type: object
       properties:
-        method:
+        key:
           type:
           - string
           - 'null'
-        path:
+        name:
           type:
           - string
           - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicSegmentConditionDto'
       additionalProperties: false
+      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/segments`. Named distinctly
+
+        from the dashboard''s own `CreateUserSegmentRequest` — see
+
+        PublicCreateEnvironmentRequest for the schemaId-collision rationale (both
+
+        controllers share one Swagger document).'
+      example:
+        key: beta-testers
+        name: Beta Testers
+        description: Users enrolled in the beta program.
+        conditions:
+        - attribute: email
+          operator: EndsWith
+          values:
+          - '@acme.com'
+          negate: false
+    PublicUpdateSegmentRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicSegmentConditionDto'
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/segments/{segment}`. The
+
+        segment''s key is immutable via this endpoint (mirrors `UpdateUserSegmentCommand`, which
+
+        carries no `Key`).'
     PublicSegmentConditionDto:
       type: object
       properties:
@@ -581,6 +644,53 @@ components:
         value fails closed with a 400, never silently dropped or defaulted); on read it''s mapped
 
         straight through from Operator, which is already a string.'
+    NextAction:
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    PublicSegmentResponsePagedResult:
+      type: object
+      properties:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicSegmentResponse'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    ActionCapability:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
     PublicSegmentResponse:
       type: object
       properties:
@@ -633,103 +743,6 @@ components:
           negate: false
         createdAt: '2026-06-01T12:00:00Z'
         updatedAt: '2026-06-15T08:30:00Z'
-    PublicSegmentResponsePagedResult:
-      type: object
-      properties:
-        items:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicSegmentResponse'
-        next_cursor:
-          type:
-          - string
-          - 'null'
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
-      additionalProperties: false
-      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
-
-        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
-
-        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
-    ActionCapability:
-      type: object
-      properties:
-        allowed:
-          type: boolean
-        reason:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
-    PublicUpdateSegmentRequest:
-      type: object
-      properties:
-        name:
-          type:
-          - string
-          - 'null'
-        description:
-          type:
-          - string
-          - 'null'
-        conditions:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicSegmentConditionDto'
-      additionalProperties: false
-      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/segments/{segment}`. The
-
-        segment''s key is immutable via this endpoint (mirrors `UpdateUserSegmentCommand`, which
-
-        carries no `Key`).'
-    PublicCreateSegmentRequest:
-      type: object
-      properties:
-        key:
-          type:
-          - string
-          - 'null'
-        name:
-          type:
-          - string
-          - 'null'
-        description:
-          type:
-          - string
-          - 'null'
-        conditions:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicSegmentConditionDto'
-      additionalProperties: false
-      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/segments`. Named distinctly
-
-        from the dashboard''s own `CreateUserSegmentRequest` — see
-
-        PublicCreateEnvironmentRequest for the schemaId-collision rationale (both
-
-        controllers share one Swagger document).'
-      example:
-        key: beta-testers
-        name: Beta Testers
-        description: Users enrolled in the beta program.
-        conditions:
-        - attribute: email
-          operator: EndsWith
-          values:
-          - '@acme.com'
-          negate: false
     PublicApiErrorEnvelope:
       type: object
       properties:
@@ -797,19 +810,6 @@ components:
         next_actions:
         - method: GET
           path: /api/v1/orgs/acme/projects/checkout/flags
-  headers:
-    X-RateLimit-Reset:
-      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
-      schema:
-        type: integer
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
-      schema:
-        type: integer
-    X-RateLimit-Limit:
-      description: The maximum number of requests permitted per rate-limit window for this caller.
-      schema:
-        type: integer
   securitySchemes:
     Bearer:
       type: apiKey

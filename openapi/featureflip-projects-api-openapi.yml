@@ -414,59 +414,20 @@ paths:
       operationId: deleteApiV1OrgsByOrgProjectsByProject
       x-operation-id-source: derived
 components:
+  headers:
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
   schemas:
-    NextAction:
-      type: object
-      properties:
-        method:
-          type:
-          - string
-          - 'null'
-        path:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-    PublicCreateProjectRequest:
-      type: object
-      properties:
-        key:
-          type:
-          - string
-          - 'null'
-        name:
-          type:
-          - string
-          - 'null'
-        description:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'Request body for `POST /api/v1/orgs/{org}/projects`. Named distinctly from the
-
-        dashboard''s own `CreateProjectRequest` — both
-
-        controllers share one Swagger document (see `Program.cs`''s `AddSwaggerGen``DocInclusionPredicate` override), and Swashbuckle''s default schemaId is the bare type
-
-        name, so an identical name in either namespace throws a schemaId collision at
-
-        `--export-openapi` time.'
-      example:
-        key: checkout
-        name: Checkout
-        description: Checkout and payments surfaces.
-    ActionCapability:
-      type: object
-      properties:
-        allowed:
-          type: boolean
-        reason:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
     ProjectResponse:
       type: object
       properties:
@@ -517,23 +478,18 @@ components:
         description: Checkout and payments surfaces.
         createdAt: '2026-06-01T12:00:00Z'
         updatedAt: '2026-06-15T08:30:00Z'
-    PublicUpdateProjectRequest:
+    NextAction:
       type: object
       properties:
-        name:
+        method:
           type:
           - string
           - 'null'
-        description:
+        path:
           type:
           - string
           - 'null'
       additionalProperties: false
-      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}`. See
-
-        PublicCreateProjectRequest for why this is named distinctly from the
-
-        dashboard''s `UpdateProjectRequest`.'
     ProjectResponsePagedResult:
       type: object
       properties:
@@ -558,6 +514,63 @@ components:
         page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
 
         `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    ActionCapability:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+    PublicUpdateProjectRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}`. See
+
+        PublicCreateProjectRequest for why this is named distinctly from the
+
+        dashboard''s `UpdateProjectRequest`.'
+    PublicCreateProjectRequest:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for `POST /api/v1/orgs/{org}/projects`. Named distinctly from the
+
+        dashboard''s own `CreateProjectRequest` — both
+
+        controllers share one Swagger document (see `Program.cs`''s `AddSwaggerGen``DocInclusionPredicate` override), and Swashbuckle''s default schemaId is the bare type
+
+        name, so an identical name in either namespace throws a schemaId collision at
+
+        `--export-openapi` time.'
+      example:
+        key: checkout
+        name: Checkout
+        description: Checkout and payments surfaces.
     PublicApiErrorEnvelope:
       type: object
       properties:
@@ -625,19 +638,6 @@ components:
         next_actions:
         - method: GET
           path: /api/v1/orgs/acme/projects/checkout/flags
-  headers:
-    X-RateLimit-Reset:
-      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
-      schema:
-        type: integer
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
-      schema:
-        type: integer
-    X-RateLimit-Limit:
-      description: The maximum number of requests permitted per rate-limit window for this caller.
-      schema:
-        type: integer
   securitySchemes:
     Bearer:
       type: apiKey

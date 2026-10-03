@@ -154,19 +154,20 @@ paths:
       operationId: getApiV1OrgsByOrg
       x-operation-id-source: derived
 components:
+  headers:
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
   schemas:
-    NextAction:
-      type: object
-      properties:
-        method:
-          type:
-          - string
-          - 'null'
-        path:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
     OrganizationResponsePagedResult:
       type: object
       properties:
@@ -191,6 +192,29 @@ components:
         page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
 
         `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    NextAction:
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    ActionCapability:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
     OrganizationResponse:
       type: object
       properties:
@@ -228,17 +252,6 @@ components:
         billing-contact PII, `UpdatedAt` is dashboard audit trivia) from the dashboard''s
 
         OrganizationDto/OrganizationListItemDto.'
-    ActionCapability:
-      type: object
-      properties:
-        allowed:
-          type: boolean
-        reason:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
     PublicApiErrorEnvelope:
       type: object
       properties:
@@ -306,19 +319,6 @@ components:
         next_actions:
         - method: GET
           path: /api/v1/orgs/acme/projects/checkout/flags
-  headers:
-    X-RateLimit-Reset:
-      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
-      schema:
-        type: integer
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
-      schema:
-        type: integer
-    X-RateLimit-Limit:
-      description: The maximum number of requests permitted per rate-limit window for this caller.
-      schema:
-        type: integer
   securitySchemes:
     Bearer:
       type: apiKey

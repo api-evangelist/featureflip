@@ -128,27 +128,6 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/ClientFlagValue'
       additionalProperties: false
-    ClientFlagValue:
-      required:
-      - reason
-      - value
-      - variation
-      type: object
-      properties:
-        value: {}
-        variation:
-          type:
-          - string
-          - 'null'
-        reason:
-          type:
-          - string
-          - 'null'
-        prerequisiteKey:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
     ProblemDetails:
       type: object
       properties:
@@ -174,6 +153,27 @@ components:
           - string
           - 'null'
       additionalProperties: {}
+    ClientFlagValue:
+      required:
+      - reason
+      - value
+      - variation
+      type: object
+      properties:
+        value: {}
+        variation:
+          type:
+          - string
+          - 'null'
+        reason:
+          type:
+          - string
+          - 'null'
+        prerequisiteKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
     ClientEvaluateRequest:
       required:
       - context
