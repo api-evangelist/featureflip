@@ -515,97 +515,93 @@ paths:
       operationId: postApiV1OrgsByOrgProjectsByProjectEnvironmentsByEnvSdkKeysBySdkKeyRevoke
       x-operation-id-source: derived
 components:
-  headers:
-    X-RateLimit-Reset:
-      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
-      schema:
-        type: integer
-    X-RateLimit-Limit:
-      description: The maximum number of requests permitted per rate-limit window for this caller.
-      schema:
-        type: integer
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
-      schema:
-        type: integer
   schemas:
-    PublicCreateSdkKeyResponse:
+    PublicApiErrorEnvelope:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-        key:
+        error:
           type:
           - string
           - 'null'
-        lastFourCharacters:
+        message:
           type:
           - string
           - 'null'
-        type:
-          enum:
-          - ClientSide
-          - ServerSide
+        docs_url:
           type:
           - string
           - 'null'
-          description: 'Allowed values: ClientSide, ServerSide.'
-        name:
+        fields:
           type:
-          - string
+          - object
           - 'null'
-        createdAt:
-          type: string
-          format: date-time
-        warning:
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        retry_after:
           type:
-          - string
+          - integer
           - 'null'
-      additionalProperties: false
-      description: 'Response body for a successful `POST .../sdk-keys`. The ONLY place the plaintext
-
-        Key is ever returned — PublicSdkKeyResponse (list/get) carries just
-
-        `LastFourCharacters`. Built directly from CreateSdkKeyResult rather than a
-
-        re-fetch (unlike `FeatureFlagsController.Create`''s re-fetch pattern) because the
-
-        plaintext key only ever exists on the create result — a subsequent
-
-        GetSdkKeyQuery can''t recover it.'
-      example:
-        id: 0197b6a2-4d5e-7f6a-9b7c-8d9e0f1a2b3c
-        key: ff_server_9f8e7d6c5b4a39281706f5e4d3c2b1a0
-        lastFourCharacters: b1a0
-        type: ServerSide
-        name: Production server key
-        createdAt: '2026-06-01T12:00:00Z'
-        warning: Store this key securely — it will not be shown again.
-    PublicSdkKeyResponsePagedResult:
-      type: object
-      properties:
-        items:
+          format: int32
+        did_you_mean:
           type:
           - array
           - 'null'
           items:
-            $ref: '#/components/schemas/PublicSdkKeyResponse'
-        next_cursor:
+            type: string
+        next_actions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/NextAction'
+      additionalProperties: false
+      description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
+
+        are frozen snake_case too (`error`, `message`, `docs_url`, `fields`,
+
+        `retry_after`) — the global camelCase naming policy would otherwise emit
+
+        `docsUrl`/`retryAfter`, breaking the published spec. !:JsonPropertyName
+
+        always wins over the policy, so these are pinned explicitly rather than relying on the
+
+        property names already being lowercase for the single-word ones.
+
+        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
+
+        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
+
+        are byte-for-byte unchanged when they''re absent.'
+      example:
+        error: not_found
+        message: Flag 'new-checkout-flw' was not found in project 'checkout'.
+        docs_url: https://featureflip.io/docs/management-api/errors/not_found
+        did_you_mean:
+        - new-checkout-flow
+        next_actions:
+        - method: GET
+          path: /api/v1/orgs/acme/projects/checkout/flags
+    PublicUpdateSdkKeyRequest:
+      type: object
+      properties:
+        name:
           type:
           - string
           - 'null'
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+        description:
+          type:
+          - string
+          - 'null'
       additionalProperties: false
-      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys/{sdkKey}`.
 
-        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+        Type and key material are immutable via this endpoint (mirrors
 
-        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+        UpdateSdkKeyCommand, which
+
+        carries no `Type`).'
     NextAction:
       type: object
       properties:
@@ -618,6 +614,43 @@ components:
           - string
           - 'null'
       additionalProperties: false
+    PublicCreateSdkKeyRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        type:
+          enum:
+          - ClientSide
+          - ServerSide
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: ClientSide, ServerSide.'
+      additionalProperties: false
+      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys`.
+
+        Type is a bare string ("ClientSide" or "ServerSide") — the controller parses it
+
+        against a NAME allowlist (not a bare TryParse``1(ReadOnlySpan{Char},Boolean,``0@), which would
+
+        silently accept a numeric string like `"0"`) before dispatching. Named distinctly from
+
+        the dashboard''s own `CreateSdkKeyRequest` — both
+
+        controllers share one Swagger document, and an identical type name in either namespace throws
+
+        a schemaId collision at `--export-openapi` time.'
+      example:
+        name: Production server key
+        description: Used by the checkout backend.
+        type: ServerSide
     PublicSdkKeyResponse:
       type: object
       properties:
@@ -687,44 +720,41 @@ components:
         isActive: true
         createdAt: '2026-06-01T12:00:00Z'
         lastUsedAt: '2026-06-20T09:15:00Z'
-    ActionCapability:
+    PublicSdkKeyResponsePagedResult:
       type: object
       properties:
-        allowed:
-          type: boolean
-        reason:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicSdkKeyResponse'
+        next_cursor:
           type:
           - string
           - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
       additionalProperties: false
-      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
-    PublicUpdateSdkKeyRequest:
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    PublicCreateSdkKeyResponse:
       type: object
       properties:
-        name:
+        id:
+          type: string
+          format: uuid
+        key:
           type:
           - string
           - 'null'
-        description:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys/{sdkKey}`.
-
-        Type and key material are immutable via this endpoint (mirrors
-
-        UpdateSdkKeyCommand, which
-
-        carries no `Type`).'
-    PublicCreateSdkKeyRequest:
-      type: object
-      properties:
-        name:
-          type:
-          - string
-          - 'null'
-        description:
+        lastFourCharacters:
           type:
           - string
           - 'null'
@@ -736,91 +766,61 @@ components:
           - string
           - 'null'
           description: 'Allowed values: ClientSide, ServerSide.'
+        name:
+          type:
+          - string
+          - 'null'
+        createdAt:
+          type: string
+          format: date-time
+        warning:
+          type:
+          - string
+          - 'null'
       additionalProperties: false
-      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys`.
+      description: 'Response body for a successful `POST .../sdk-keys`. The ONLY place the plaintext
 
-        Type is a bare string ("ClientSide" or "ServerSide") — the controller parses it
+        Key is ever returned — PublicSdkKeyResponse (list/get) carries just
 
-        against a NAME allowlist (not a bare TryParse``1(ReadOnlySpan{Char},Boolean,``0@), which would
+        `LastFourCharacters`. Built directly from CreateSdkKeyResult rather than a
 
-        silently accept a numeric string like `"0"`) before dispatching. Named distinctly from
+        re-fetch (unlike `FeatureFlagsController.Create`''s re-fetch pattern) because the
 
-        the dashboard''s own `CreateSdkKeyRequest` — both
+        plaintext key only ever exists on the create result — a subsequent
 
-        controllers share one Swagger document, and an identical type name in either namespace throws
-
-        a schemaId collision at `--export-openapi` time.'
+        GetSdkKeyQuery can''t recover it.'
       example:
-        name: Production server key
-        description: Used by the checkout backend.
+        id: 0197b6a2-4d5e-7f6a-9b7c-8d9e0f1a2b3c
+        key: ff_server_9f8e7d6c5b4a39281706f5e4d3c2b1a0
+        lastFourCharacters: b1a0
         type: ServerSide
-    PublicApiErrorEnvelope:
+        name: Production server key
+        createdAt: '2026-06-01T12:00:00Z'
+        warning: Store this key securely — it will not be shown again.
+    ActionCapability:
       type: object
       properties:
-        error:
+        allowed:
+          type: boolean
+        reason:
           type:
           - string
           - 'null'
-        message:
-          type:
-          - string
-          - 'null'
-        docs_url:
-          type:
-          - string
-          - 'null'
-        fields:
-          type:
-          - object
-          - 'null'
-          additionalProperties:
-            type: array
-            items:
-              type: string
-        retry_after:
-          type:
-          - integer
-          - 'null'
-          format: int32
-        did_you_mean:
-          type:
-          - array
-          - 'null'
-          items:
-            type: string
-        next_actions:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/NextAction'
       additionalProperties: false
-      description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
-
-        are frozen snake_case too (`error`, `message`, `docs_url`, `fields`,
-
-        `retry_after`) — the global camelCase naming policy would otherwise emit
-
-        `docsUrl`/`retryAfter`, breaking the published spec. !:JsonPropertyName
-
-        always wins over the policy, so these are pinned explicitly rather than relying on the
-
-        property names already being lowercase for the single-word ones.
-
-        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
-
-        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
-
-        are byte-for-byte unchanged when they''re absent.'
-      example:
-        error: not_found
-        message: Flag 'new-checkout-flw' was not found in project 'checkout'.
-        docs_url: https://featureflip.io/docs/management-api/errors/not_found
-        did_you_mean:
-        - new-checkout-flow
-        next_actions:
-        - method: GET
-          path: /api/v1/orgs/acme/projects/checkout/flags
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+  headers:
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
   securitySchemes:
     Bearer:
       type: apiKey

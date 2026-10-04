@@ -515,59 +515,74 @@ paths:
       operationId: deleteApiV1OrgsByOrgProjectsByProjectSegmentsBySegment
       x-operation-id-source: derived
 components:
-  headers:
-    X-RateLimit-Reset:
-      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
-      schema:
-        type: integer
-    X-RateLimit-Limit:
-      description: The maximum number of requests permitted per rate-limit window for this caller.
-      schema:
-        type: integer
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
-      schema:
-        type: integer
   schemas:
-    PublicCreateSegmentRequest:
+    PublicApiErrorEnvelope:
       type: object
       properties:
-        key:
+        error:
           type:
           - string
           - 'null'
-        name:
+        message:
           type:
           - string
           - 'null'
-        description:
+        docs_url:
           type:
           - string
           - 'null'
-        conditions:
+        fields:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        retry_after:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        did_you_mean:
           type:
           - array
           - 'null'
           items:
-            $ref: '#/components/schemas/PublicSegmentConditionDto'
+            type: string
+        next_actions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/NextAction'
       additionalProperties: false
-      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/segments`. Named distinctly
+      description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
 
-        from the dashboard''s own `CreateUserSegmentRequest` — see
+        are frozen snake_case too (`error`, `message`, `docs_url`, `fields`,
 
-        PublicCreateEnvironmentRequest for the schemaId-collision rationale (both
+        `retry_after`) — the global camelCase naming policy would otherwise emit
 
-        controllers share one Swagger document).'
+        `docsUrl`/`retryAfter`, breaking the published spec. !:JsonPropertyName
+
+        always wins over the policy, so these are pinned explicitly rather than relying on the
+
+        property names already being lowercase for the single-word ones.
+
+        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
+
+        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
+
+        are byte-for-byte unchanged when they''re absent.'
       example:
-        key: beta-testers
-        name: Beta Testers
-        description: Users enrolled in the beta program.
-        conditions:
-        - attribute: email
-          operator: EndsWith
-          values:
-          - '@acme.com'
-          negate: false
+        error: not_found
+        message: Flag 'new-checkout-flw' was not found in project 'checkout'.
+        docs_url: https://featureflip.io/docs/management-api/errors/not_found
+        did_you_mean:
+        - new-checkout-flow
+        next_actions:
+        - method: GET
+          path: /api/v1/orgs/acme/projects/checkout/flags
     PublicUpdateSegmentRequest:
       type: object
       properties:
@@ -644,6 +659,45 @@ components:
         value fails closed with a 400, never silently dropped or defaulted); on read it''s mapped
 
         straight through from Operator, which is already a string.'
+    PublicCreateSegmentRequest:
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicSegmentConditionDto'
+      additionalProperties: false
+      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/segments`. Named distinctly
+
+        from the dashboard''s own `CreateUserSegmentRequest` — see
+
+        PublicCreateEnvironmentRequest for the schemaId-collision rationale (both
+
+        controllers share one Swagger document).'
+      example:
+        key: beta-testers
+        name: Beta Testers
+        description: Users enrolled in the beta program.
+        conditions:
+        - attribute: email
+          operator: EndsWith
+          values:
+          - '@acme.com'
+          negate: false
     NextAction:
       type: object
       properties:
@@ -680,17 +734,6 @@ components:
         page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
 
         `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
-    ActionCapability:
-      type: object
-      properties:
-        allowed:
-          type: boolean
-        reason:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
     PublicSegmentResponse:
       type: object
       properties:
@@ -743,73 +786,30 @@ components:
           negate: false
         createdAt: '2026-06-01T12:00:00Z'
         updatedAt: '2026-06-15T08:30:00Z'
-    PublicApiErrorEnvelope:
+    ActionCapability:
       type: object
       properties:
-        error:
+        allowed:
+          type: boolean
+        reason:
           type:
           - string
           - 'null'
-        message:
-          type:
-          - string
-          - 'null'
-        docs_url:
-          type:
-          - string
-          - 'null'
-        fields:
-          type:
-          - object
-          - 'null'
-          additionalProperties:
-            type: array
-            items:
-              type: string
-        retry_after:
-          type:
-          - integer
-          - 'null'
-          format: int32
-        did_you_mean:
-          type:
-          - array
-          - 'null'
-          items:
-            type: string
-        next_actions:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/NextAction'
       additionalProperties: false
-      description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
-
-        are frozen snake_case too (`error`, `message`, `docs_url`, `fields`,
-
-        `retry_after`) — the global camelCase naming policy would otherwise emit
-
-        `docsUrl`/`retryAfter`, breaking the published spec. !:JsonPropertyName
-
-        always wins over the policy, so these are pinned explicitly rather than relying on the
-
-        property names already being lowercase for the single-word ones.
-
-        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
-
-        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
-
-        are byte-for-byte unchanged when they''re absent.'
-      example:
-        error: not_found
-        message: Flag 'new-checkout-flw' was not found in project 'checkout'.
-        docs_url: https://featureflip.io/docs/management-api/errors/not_found
-        did_you_mean:
-        - new-checkout-flow
-        next_actions:
-        - method: GET
-          path: /api/v1/orgs/acme/projects/checkout/flags
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+  headers:
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
+    X-RateLimit-Limit:
+      description: The maximum number of requests permitted per rate-limit window for this caller.
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
   securitySchemes:
     Bearer:
       type: apiKey
