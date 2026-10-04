@@ -1,0 +1,65 @@
+slug: featureflip
+provider: Featureflip
+generated_by: planning/capability-mapping/scripts/classify_capabilities.py
+model: claude-opus-5
+frame:
+- Software & Technology
+min_confidence: 0.7
+capability_model:
+  source: https://github.com/vincentmakes/turbo-ea-capabilities
+  license: CC-BY-4.0
+  attribution: Turbo EA Capabilities by Vincent Verdet — Turbo EA, https://github.com/vincentmakes/turbo-ea-capabilities,
+    CC BY 4.0
+  notice: NOTICE
+edge_count: 5
+edges:
+- tag: Feature Flags
+  spec_file: featureflip-feature-flags-api-openapi.yml
+  capability_id: BC-4210.50
+  capability_id_l1: BC-4210
+  capability_name: Feature Flag Management
+  confidence: 0.95
+  evidence: '''Creates a feature flag in the resolved project''; ''Enables or disables the resolved flag
+    in a resolved environment''; ''Lists confidently-dead ... flags'''
+  reason: Full lifecycle of feature flags — create, update, archive, restore, per-environment targeting
+    and toggling, dead-flag removal candidates — is the definition of Feature Flag Management.
+- tag: Client SDK
+  spec_file: featureflip-client-sdk-api-openapi.yml
+  capability_id: BC-4210.50
+  capability_id_l1: BC-4210
+  capability_name: Feature Flag Management
+  confidence: 0.92
+  evidence: POST /v1/client/evaluate 'Evaluates all client-visible feature flags for the given user context'
+  reason: Runtime evaluation and streaming of feature flag values to client SDKs is exactly the runtime-control
+    half of Feature Flag Management.
+- tag: Server SDK
+  spec_file: featureflip-server-sdk-api-openapi.yml
+  capability_id: BC-4210.50
+  capability_id_l1: BC-4210
+  capability_name: Feature Flag Management
+  confidence: 0.9
+  evidence: POST /v1/sdk/evaluate 'Evaluates a feature flag for the given context'; GET /v1/sdk/flags
+    'Retrieves all feature flags for the authenticated environment'
+  reason: Server-side flag retrieval, evaluation and real-time streaming is the runtime control surface
+    of Feature Flag Management.
+- tag: User Segments
+  spec_file: featureflip-user-segments-api-openapi.yml
+  capability_id: BC-4210.50
+  capability_id_l1: BC-4210
+  capability_name: Feature Flag Management
+  confidence: 0.75
+  evidence: '''Creates a user segment in the resolved project''; schema PublicSegmentConditionDto'
+  reason: Segments are reusable condition sets used to target feature flags to cohorts, per the spec description
+    'projects, environments, feature flags, variations, targeting, segments'. This is flag targeting,
+    not marketing-style Customer Segmentation (BC-420.20).
+- tag: Environments
+  spec_file: featureflip-environments-api-openapi.yml
+  capability_id: BC-4210
+  capability_id_l1: BC-4210
+  capability_name: Software Release & Deployment Management
+  confidence: 0.7
+  evidence: POST /api/v1/orgs/{org}/projects/{project}/environments 'Creates an environment in the resolved
+    project'
+  reason: Environments here are logical containers (name/color/sort order) scoping feature flag configuration
+    and SDK keys, so the L1 Release & Deployment domain fits. Left the L2 null because this is not provisioning
+    of actual non-production compute environments (BC-4210.20) nor flag lifecycle itself.

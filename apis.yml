@@ -494,6 +494,9 @@ generated:
   confidence: 97
   at: '2026-09-12T04:54:28.200Z'
 common:
+- type: CapabilityMap
+  url: capabilities/featureflip-capability-edges.yml
+  name: Featureflip Business Capability Map
 - type: Overlay
   url: overlays/featureflip-management-overlay.yaml
 - type: Overlay
