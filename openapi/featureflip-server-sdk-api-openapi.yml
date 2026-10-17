@@ -159,29 +159,27 @@ paths:
       x-operation-id-source: derived
 components:
   schemas:
-    ConditionOperator:
+    FlagType:
       enum:
-      - Equals
-      - NotEquals
-      - Contains
-      - NotContains
-      - StartsWith
-      - EndsWith
-      - In
-      - NotIn
-      - MatchesRegex
-      - GreaterThan
-      - LessThan
-      - GreaterThanOrEqual
-      - LessThanOrEqual
-      - Before
-      - After
-      - SemverEquals
-      - SemverGreaterThan
-      - SemverGreaterThanOrEqual
-      - SemverLessThan
-      - SemverLessThanOrEqual
+      - Boolean
+      - String
+      - Number
+      - Json
       type: string
+    WeightedVariationDto:
+      required:
+      - key
+      - weight
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        weight:
+          type: integer
+          format: int32
+      additionalProperties: false
     EvaluateFlagResponse:
       required:
       - key
@@ -208,36 +206,6 @@ components:
           - string
           - 'null'
       additionalProperties: false
-    ProblemDetails:
-      type: object
-      properties:
-        type:
-          type:
-          - string
-          - 'null'
-        title:
-          type:
-          - string
-          - 'null'
-        status:
-          type:
-          - integer
-          - 'null'
-          format: int32
-        detail:
-          type:
-          - string
-          - 'null'
-        instance:
-          type:
-          - string
-          - 'null'
-      additionalProperties: {}
-    ServeType:
-      enum:
-      - Fixed
-      - Rollout
-      type: string
     ConditionDto:
       required:
       - attribute
@@ -260,13 +228,147 @@ components:
         negate:
           type: boolean
       additionalProperties: false
-    SdkEventType:
+    ServeType:
       enum:
-      - Evaluation
-      - Impression
-      - Identify
-      - Custom
+      - Fixed
+      - Rollout
       type: string
+    RecordEventsRequest:
+      required:
+      - events
+      type: object
+      properties:
+        events:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/SdkEventDto'
+      additionalProperties: false
+    SdkEventDto:
+      required:
+      - flagKey
+      - type
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/SdkEventType'
+        flagKey:
+          type:
+          - string
+          - 'null'
+        userId:
+          type:
+          - string
+          - 'null'
+        variation:
+          type:
+          - string
+          - 'null'
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          type:
+          - object
+          - 'null'
+          additionalProperties: {}
+        prerequisiteKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    ConditionOperator:
+      enum:
+      - Equals
+      - NotEquals
+      - Contains
+      - NotContains
+      - StartsWith
+      - EndsWith
+      - In
+      - NotIn
+      - MatchesRegex
+      - GreaterThan
+      - LessThan
+      - GreaterThanOrEqual
+      - LessThanOrEqual
+      - Before
+      - After
+      - SemverEquals
+      - SemverGreaterThan
+      - SemverGreaterThanOrEqual
+      - SemverLessThan
+      - SemverLessThanOrEqual
+      type: string
+    ConditionLogic:
+      enum:
+      - And
+      - Or
+      type: string
+    ServeConfigDto:
+      required:
+      - type
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/ServeType'
+        variation:
+          type:
+          - string
+          - 'null'
+        bucketBy:
+          type:
+          - string
+          - 'null'
+        salt:
+          type:
+          - string
+          - 'null'
+        variations:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/WeightedVariationDto'
+      additionalProperties: false
+    EvaluateFlagRequest:
+      required:
+      - context
+      - flagKey
+      type: object
+      properties:
+        flagKey:
+          type:
+          - string
+          - 'null'
+        context:
+          $ref: '#/components/schemas/EvaluationContextDto'
+      additionalProperties: false
+    SegmentDto:
+      required:
+      - conditionLogic
+      - conditions
+      - key
+      - version
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        version:
+          type: integer
+          format: int32
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/ConditionDto'
+        conditionLogic:
+          $ref: '#/components/schemas/ConditionLogic'
+      additionalProperties: false
     VariationDto:
       required:
       - key
@@ -278,6 +380,54 @@ components:
           - string
           - 'null'
         value: {}
+      additionalProperties: false
+    SdkEventType:
+      enum:
+      - Evaluation
+      - Impression
+      - Identify
+      - Custom
+      type: string
+    RuleDto:
+      required:
+      - conditionGroups
+      - id
+      - priority
+      - serve
+      type: object
+      properties:
+        id:
+          type:
+          - string
+          - 'null'
+        priority:
+          type: integer
+          format: int32
+        conditionGroups:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/ConditionGroupDto'
+        serve:
+          $ref: '#/components/schemas/ServeConfigDto'
+        segmentKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    EvaluationContextDto:
+      type: object
+      properties:
+        userId:
+          type:
+          - string
+          - 'null'
+        attributes:
+          type:
+          - object
+          - 'null'
+          additionalProperties: {}
       additionalProperties: false
     GetFlagsResponse:
       required:
@@ -307,67 +457,35 @@ components:
           items:
             $ref: '#/components/schemas/SegmentDto'
       additionalProperties: false
-    RuleDto:
+    ConditionGroupDto:
       required:
-      - conditionGroups
-      - id
-      - priority
-      - serve
+      - conditions
+      - operator
       type: object
       properties:
-        id:
-          type:
-          - string
-          - 'null'
-        priority:
-          type: integer
-          format: int32
-        conditionGroups:
+        operator:
+          $ref: '#/components/schemas/ConditionLogic'
+        conditions:
           type:
           - array
           - 'null'
           items:
-            $ref: '#/components/schemas/ConditionGroupDto'
-        serve:
-          $ref: '#/components/schemas/ServeConfigDto'
-        segmentKey:
-          type:
-          - string
-          - 'null'
+            $ref: '#/components/schemas/ConditionDto'
       additionalProperties: false
-    EvaluateFlagRequest:
+    PrerequisiteDto:
       required:
-      - context
-      - flagKey
+      - expectedVariationKey
+      - prerequisiteFlagKey
       type: object
       properties:
-        flagKey:
+        prerequisiteFlagKey:
           type:
           - string
           - 'null'
-        context:
-          $ref: '#/components/schemas/EvaluationContextDto'
-      additionalProperties: false
-    FlagType:
-      enum:
-      - Boolean
-      - String
-      - Number
-      - Json
-      type: string
-    WeightedVariationDto:
-      required:
-      - key
-      - weight
-      type: object
-      properties:
-        key:
+        expectedVariationKey:
           type:
           - string
           - 'null'
-        weight:
-          type: integer
-          format: int32
       additionalProperties: false
     FlagDto:
       required:
@@ -418,149 +536,31 @@ components:
           items:
             $ref: '#/components/schemas/PrerequisiteDto'
       additionalProperties: false
-    ConditionGroupDto:
-      required:
-      - conditions
-      - operator
-      type: object
-      properties:
-        operator:
-          $ref: '#/components/schemas/ConditionLogic'
-        conditions:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/ConditionDto'
-      additionalProperties: false
-    ServeConfigDto:
-      required:
-      - type
+    ProblemDetails:
       type: object
       properties:
         type:
-          $ref: '#/components/schemas/ServeType'
-        variation:
           type:
           - string
           - 'null'
-        bucketBy:
+        title:
           type:
           - string
           - 'null'
-        salt:
+        status:
           type:
-          - string
+          - integer
           - 'null'
-        variations:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/WeightedVariationDto'
-      additionalProperties: false
-    RecordEventsRequest:
-      required:
-      - events
-      type: object
-      properties:
-        events:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/SdkEventDto'
-      additionalProperties: false
-    SdkEventDto:
-      required:
-      - flagKey
-      - type
-      type: object
-      properties:
-        type:
-          $ref: '#/components/schemas/SdkEventType'
-        flagKey:
-          type:
-          - string
-          - 'null'
-        userId:
-          type:
-          - string
-          - 'null'
-        variation:
-          type:
-          - string
-          - 'null'
-        timestamp:
-          type: string
-          format: date-time
-        metadata:
-          type:
-          - object
-          - 'null'
-          additionalProperties: {}
-        prerequisiteKey:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-    ConditionLogic:
-      enum:
-      - And
-      - Or
-      type: string
-    SegmentDto:
-      required:
-      - conditionLogic
-      - conditions
-      - key
-      - version
-      type: object
-      properties:
-        key:
-          type:
-          - string
-          - 'null'
-        version:
-          type: integer
           format: int32
-        conditions:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/ConditionDto'
-        conditionLogic:
-          $ref: '#/components/schemas/ConditionLogic'
-      additionalProperties: false
-    PrerequisiteDto:
-      required:
-      - expectedVariationKey
-      - prerequisiteFlagKey
-      type: object
-      properties:
-        prerequisiteFlagKey:
+        detail:
           type:
           - string
           - 'null'
-        expectedVariationKey:
+        instance:
           type:
           - string
           - 'null'
-      additionalProperties: false
-    EvaluationContextDto:
-      type: object
-      properties:
-        userId:
-          type:
-          - string
-          - 'null'
-        attributes:
-          type:
-          - object
-          - 'null'
-          additionalProperties: {}
-      additionalProperties: false
+      additionalProperties: {}
   securitySchemes:
     Bearer:
       type: apiKey

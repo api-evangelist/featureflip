@@ -552,26 +552,17 @@ components:
         next_actions:
         - method: GET
           path: /api/v1/orgs/acme/projects/checkout/flags
-    PublicUpdateEnvironmentRequest:
+    ActionCapability:
       type: object
       properties:
-        name:
+        allowed:
+          type: boolean
+        reason:
           type:
           - string
           - 'null'
-        color:
-          type:
-          - string
-          - 'null'
-        sortOrder:
-          type: integer
-          format: int32
       additionalProperties: false
-      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/environments/{env}`. See
-
-        PublicCreateEnvironmentRequest for why this is named distinctly from the
-
-        dashboard''s `UpdateEnvironmentRequest`.'
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
     PublicEnvironmentResponse:
       type: object
       properties:
@@ -622,18 +613,6 @@ components:
         name: Production
         color: '#16A34A'
         sortOrder: 2
-    NextAction:
-      type: object
-      properties:
-        method:
-          type:
-          - string
-          - 'null'
-        path:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
     PublicEnvironmentResponsePagedResult:
       type: object
       properties:
@@ -658,6 +637,18 @@ components:
         page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
 
         `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    NextAction:
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
     PublicCreateEnvironmentRequest:
       type: object
       properties:
@@ -691,28 +682,37 @@ components:
         name: Production
         color: '#16A34A'
         sortOrder: 2
-    ActionCapability:
+    PublicUpdateEnvironmentRequest:
       type: object
       properties:
-        allowed:
-          type: boolean
-        reason:
+        name:
           type:
           - string
           - 'null'
+        color:
+          type:
+          - string
+          - 'null'
+        sortOrder:
+          type: integer
+          format: int32
       additionalProperties: false
-      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/environments/{env}`. See
+
+        PublicCreateEnvironmentRequest for why this is named distinctly from the
+
+        dashboard''s `UpdateEnvironmentRequest`.'
   headers:
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
-      schema:
-        type: integer
     X-RateLimit-Limit:
       description: The maximum number of requests permitted per rate-limit window for this caller.
       schema:
         type: integer
     X-RateLimit-Reset:
       description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
       schema:
         type: integer
   securitySchemes:

@@ -583,37 +583,17 @@ components:
         next_actions:
         - method: GET
           path: /api/v1/orgs/acme/projects/checkout/flags
-    PublicUpdateSdkKeyRequest:
+    ActionCapability:
       type: object
       properties:
-        name:
-          type:
-          - string
-          - 'null'
-        description:
+        allowed:
+          type: boolean
+        reason:
           type:
           - string
           - 'null'
       additionalProperties: false
-      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys/{sdkKey}`.
-
-        Type and key material are immutable via this endpoint (mirrors
-
-        UpdateSdkKeyCommand, which
-
-        carries no `Type`).'
-    NextAction:
-      type: object
-      properties:
-        method:
-          type:
-          - string
-          - 'null'
-        path:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
     PublicCreateSdkKeyRequest:
       type: object
       properties:
@@ -651,6 +631,30 @@ components:
         name: Production server key
         description: Used by the checkout backend.
         type: ServerSide
+    PublicSdkKeyResponsePagedResult:
+      type: object
+      properties:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicSdkKeyResponse'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
     PublicSdkKeyResponse:
       type: object
       properties:
@@ -720,30 +724,37 @@ components:
         isActive: true
         createdAt: '2026-06-01T12:00:00Z'
         lastUsedAt: '2026-06-20T09:15:00Z'
-    PublicSdkKeyResponsePagedResult:
+    NextAction:
       type: object
       properties:
-        items:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicSdkKeyResponse'
-        next_cursor:
+        method:
           type:
           - string
           - 'null'
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+        path:
+          type:
+          - string
+          - 'null'
       additionalProperties: false
-      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+    PublicUpdateSdkKeyRequest:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/environments/{env}/sdk-keys/{sdkKey}`.
 
-        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+        Type and key material are immutable via this endpoint (mirrors
 
-        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+        UpdateSdkKeyCommand, which
+
+        carries no `Type`).'
     PublicCreateSdkKeyResponse:
       type: object
       properties:
@@ -797,28 +808,17 @@ components:
         name: Production server key
         createdAt: '2026-06-01T12:00:00Z'
         warning: Store this key securely — it will not be shown again.
-    ActionCapability:
-      type: object
-      properties:
-        allowed:
-          type: boolean
-        reason:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
   headers:
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
       schema:
         type: integer
     X-RateLimit-Limit:
       description: The maximum number of requests permitted per rate-limit window for this caller.
       schema:
         type: integer
-    X-RateLimit-Reset:
-      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
       schema:
         type: integer
   securitySchemes:
