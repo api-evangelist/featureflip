@@ -1,0 +1,223 @@
+edges:
+- partner_name: Go module proxy
+  partner: null
+  partner_match: null
+  type: register
+  direction: provider-built
+  category: official SDK (Go)
+  evidence: https://pkg.go.dev/github.com/canopy-labs/featureflip-go
+  channel: package-registry
+  relationship: distribution-channel
+  contract_reference:
+    register: Go module proxy (public registry JSON)
+    spec_file: null
+    language: Go
+    packages:
+    - name: github.com/canopy-labs/featureflip-go
+      version: v1.0.1
+      released: '2026-04-03'
+      released_field: Time
+      lapsed: false
+      page: https://pkg.go.dev/github.com/canopy-labs/featureflip-go
+      repo_leg: github-org:canopy-labs
+      publisher_leg: org:canopy-labs
+      matched_by: github-org
+    - name: github.com/canopy-labs/featureflip-go-openfeature
+      version: v0.2.1
+      released: '2026-09-23'
+      released_field: Time
+      lapsed: false
+      page: https://pkg.go.dev/github.com/canopy-labs/featureflip-go-openfeature
+      repo_leg: github-org:canopy-labs
+      publisher_leg: org:canopy-labs
+      matched_by: github-org
+    current: true
+    signal_note: 'an official package on the registry: distribution, not an integration; lapsed = no release in
+      24 months'
+    detected_by: sweep-official-sdks.py
+    detected: '2026-10-18'
+  detected_by: sweep-official-sdks.py
+  first_seen: '2026-10-18'
+- partner_name: Maven Central
+  partner: maven-central
+  partner_match: register
+  type: register
+  direction: provider-built
+  category: official SDK (Java/JVM)
+  evidence: https://central.sonatype.com/artifact/io.featureflip/featureflip-java
+  channel: package-registry
+  relationship: distribution-channel
+  contract_reference:
+    register: Maven Central (public registry JSON)
+    spec_file: null
+    language: Java/JVM
+    packages:
+    - name: io.featureflip:featureflip-java
+      version: 2.10.1
+      released: '2026-10-01'
+      released_field: lastUpdated
+      lapsed: false
+      page: https://central.sonatype.com/artifact/io.featureflip/featureflip-java
+      repo_leg: domain:featureflip.io
+      publisher_leg: groupId:featureflip.io
+      matched_by: domain
+    - name: io.featureflip:featureflip-openfeature
+      version: 0.1.1
+      released: '2026-09-23'
+      released_field: lastUpdated
+      lapsed: false
+      page: https://central.sonatype.com/artifact/io.featureflip/featureflip-openfeature
+      repo_leg: domain:featureflip.io
+      publisher_leg: groupId:featureflip.io
+      matched_by: domain
+    current: true
+    signal_note: 'an official package on the registry: distribution, not an integration; lapsed = no release in
+      24 months'
+    detected_by: sweep-official-sdks.py
+    detected: '2026-10-18'
+  detected_by: sweep-official-sdks.py
+  first_seen: '2026-10-18'
+- partner_name: npm registry
+  partner: npm
+  partner_match: register
+  type: register
+  direction: provider-built
+  category: official SDK (JavaScript/TypeScript)
+  evidence: https://www.npmjs.com/package/@featureflip/browser
+  channel: package-registry
+  relationship: distribution-channel
+  contract_reference:
+    register: npm registry (public registry JSON)
+    spec_file: null
+    language: JavaScript/TypeScript
+    packages:
+    - name: '@featureflip/browser'
+      version: 2.11.1
+      released: '2026-10-10'
+      released_field: modified
+      lapsed: false
+      page: https://www.npmjs.com/package/@featureflip/browser
+      repo_leg: domain:featureflip.io
+      publisher_leg: email:featureflip.io
+      matched_by: domain
+    - name: '@featureflip/js'
+      version: 2.11.1
+      released: '2026-10-10'
+      released_field: modified
+      lapsed: false
+      page: https://www.npmjs.com/package/@featureflip/js
+      repo_leg: domain:featureflip.io
+      publisher_leg: email:featureflip.io
+      matched_by: domain
+    - name: '@featureflip/node'
+      version: 2.11.1
+      released: '2026-10-10'
+      released_field: modified
+      lapsed: false
+      page: https://www.npmjs.com/package/@featureflip/node
+      repo_leg: domain:featureflip.io
+      publisher_leg: email:featureflip.io
+      matched_by: domain
+    - name: '@featureflip/openfeature-node'
+      version: 0.2.1
+      released: '2026-08-05'
+      released_field: modified
+      lapsed: false
+      page: https://www.npmjs.com/package/@featureflip/openfeature-node
+      repo_leg: domain:featureflip.io
+      publisher_leg: email:featureflip.io
+      matched_by: domain
+    - name: '@featureflip/react'
+      version: 2.11.1
+      released: '2026-10-10'
+      released_field: modified
+      lapsed: false
+      page: https://www.npmjs.com/package/@featureflip/react
+      repo_leg: domain:featureflip.io
+      publisher_leg: email:featureflip.io
+      matched_by: domain
+    current: true
+    signal_note: 'an official package on the registry: distribution, not an integration; lapsed = no release in
+      24 months'
+    detected_by: sweep-official-sdks.py
+    detected: '2026-10-18'
+  detected_by: sweep-official-sdks.py
+  first_seen: '2026-10-18'
+- partner_name: NuGet Gallery
+  partner: nuget
+  partner_match: register
+  type: register
+  direction: provider-built
+  category: official SDK (.NET)
+  evidence: https://www.nuget.org/packages/Featureflip.OpenFeature
+  channel: package-registry
+  relationship: distribution-channel
+  contract_reference:
+    register: NuGet Gallery (public registry JSON)
+    spec_file: null
+    language: .NET
+    packages:
+    - name: Featureflip.OpenFeature
+      version: 0.4.0
+      released: '2026-09-17'
+      released_field: published
+      lapsed: false
+      page: https://www.nuget.org/packages/Featureflip.OpenFeature
+      repo_leg: domain:featureflip.io
+      publisher_leg: org:canopylabs
+      matched_by: domain
+    current: true
+    signal_note: 'an official package on the registry: distribution, not an integration; lapsed = no release in
+      24 months'
+    detected_by: sweep-official-sdks.py
+    detected: '2026-10-18'
+  detected_by: sweep-official-sdks.py
+  first_seen: '2026-10-18'
+- partner_name: RubyGems
+  partner: rubygems
+  partner_match: register
+  type: register
+  direction: provider-built
+  category: official SDK (Ruby)
+  evidence: https://rubygems.org/gems/featureflip
+  channel: package-registry
+  relationship: distribution-channel
+  contract_reference:
+    register: RubyGems (public registry JSON)
+    spec_file: null
+    language: Ruby
+    packages:
+    - name: featureflip
+      version: 2.10.0
+      released: '2026-10-10'
+      released_field: version_created_at
+      lapsed: false
+      page: https://rubygems.org/gems/featureflip
+      repo_leg: domain:featureflip.io
+      publisher_leg: org:canopylabs
+      matched_by: domain
+    current: true
+    signal_note: 'an official package on the registry: distribution, not an integration; lapsed = no release in
+      24 months'
+    detected_by: sweep-official-sdks.py
+    detected: '2026-10-18'
+  detected_by: sweep-official-sdks.py
+  first_seen: '2026-10-18'
+generated: '2026-10-18'
+method: searched
+source:
+- https://api.nuget.org/v3
+- https://crates.io/api/v1
+- https://proxy.golang.org
+- https://pypi.org/pypi
+- https://registry.npmjs.org
+- https://repo1.maven.org/maven2
+- https://rubygems.org/api/v1
+checked:
+- https://api.nuget.org/v3
+- https://crates.io/api/v1
+- https://proxy.golang.org
+- https://pypi.org/pypi
+- https://registry.npmjs.org
+- https://repo1.maven.org/maven2
+- https://rubygems.org/api/v1
