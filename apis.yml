@@ -484,6 +484,19 @@ apis:
     url: https://featureflip.io/docs/api/reference/
   - type: Documentation
     url: https://featureflip.io/docs/api/reference/
+- aid: featureflip:featureflip-webhooks-api
+  name: Featureflip Webhooks API
+  description: >-
+    Manage outbound webhook subscriptions: where configuration-change events are sent, which
+
+    events and projects they cover, their signing secrets, and their delivery log.
+  humanURL: https://featureflip.io/docs/integrations/mcp/
+  baseURL: https://featureflip.io/docs/integrations/mcp/
+  tags:
+  - Webhooks
+  properties:
+  - type: OpenAPI
+    url: openapi/featureflip-webhooks-api-openapi.yml
 maintainers:
   - FN: Featureflip
     email: contact@featureflip.io

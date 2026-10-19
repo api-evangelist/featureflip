@@ -155,31 +155,11 @@ paths:
       x-operation-id-source: derived
 components:
   schemas:
-    OrganizationResponsePagedResult:
-      type: object
-      properties:
-        items:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/OrganizationResponse'
-        next_cursor:
-          type:
-          - string
-          - 'null'
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
-      additionalProperties: false
-      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
-
-        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
-
-        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
     PublicApiErrorEnvelope:
+      required:
+      - error
+      - message
+      - docs_url
       type: object
       properties:
         error:
@@ -219,6 +199,13 @@ components:
           - 'null'
           items:
             $ref: '#/components/schemas/NextAction'
+        connection_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        plan_limit:
+          $ref: '#/components/schemas/PublicPlanLimit'
       additionalProperties: false
       description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
 
@@ -232,11 +219,22 @@ components:
 
         property names already being lowercase for the single-word ones.
 
-        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
+        `did_you_mean`, `next_actions` and `connection_id` are ADDITIVE optional keys
 
-        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
+        (null → omitted via the global `DefaultIgnoreCondition = WhenWritingNull`), so
 
-        are byte-for-byte unchanged when they''re absent.'
+        pre-existing error bodies are byte-for-byte unchanged when they''re absent.
+
+
+        `connection_id` is present only on the `sso_required` error: the organization
+
+        requires single sign-on, and this credential didn''t come through its identity provider.
+
+        `connection_id` identifies which SSO connection to sign in with.
+
+        `plan_limit` is present only on the `plan_limit_reached` error: which plan cap the
+
+        request would have exceeded, so a client can branch on it without parsing `message`.'
       example:
         error: not_found
         message: Flag 'new-checkout-flw' was not found in project 'checkout'.
@@ -246,6 +244,58 @@ components:
         next_actions:
         - method: GET
           path: /api/v1/orgs/acme/projects/checkout/flags
+    OrganizationResponsePagedResult:
+      required:
+      - items
+      type: object
+      properties:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/OrganizationResponse'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    PublicPlanLimit:
+      required:
+      - resource
+      - plan
+      - max
+      type: object
+      properties:
+        resource:
+          type:
+          - string
+          - 'null'
+        plan:
+          type:
+          - string
+          - 'null'
+        max:
+          type: integer
+          format: int32
+      additionalProperties: false
+      description: 'The cap behind a `plan_limit_reached` error. `resource` is the capped collection
+
+        (`projects`, `environments`, `flags`, `webhooks`, `members`);
+
+        `plan` is the plan''s wire name, as `GET /api/v1/orgs/{org}` returns it; `max` is
+
+        the cap. The environment and flag caps are per project.'
     ActionCapability:
       type: object
       properties:
@@ -258,6 +308,9 @@ components:
       additionalProperties: false
       description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
     NextAction:
+      required:
+      - method
+      - path
       type: object
       properties:
         method:
@@ -270,6 +323,13 @@ components:
           - 'null'
       additionalProperties: false
     OrganizationResponse:
+      required:
+      - id
+      - name
+      - slug
+      - plan
+      - isActive
+      - createdAt
       type: object
       properties:
         id:
@@ -286,13 +346,14 @@ components:
         plan:
           enum:
           - Solo
+          - Team
           - Pro
           - Business
           - Enterprise
           type:
           - string
           - 'null'
-          description: 'Allowed values: Solo, Pro, Business, Enterprise.'
+          description: 'Allowed values: Solo, Team, Pro, Business, Enterprise.'
         isActive:
           type: boolean
         createdAt:
@@ -307,16 +368,16 @@ components:
 
         OrganizationDto/OrganizationListItemDto.'
   headers:
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
     X-RateLimit-Reset:
       description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
       schema:
         type: integer
     X-RateLimit-Limit:
       description: The maximum number of requests permitted per rate-limit window for this caller.
-      schema:
-        type: integer
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
       schema:
         type: integer
   securitySchemes:

@@ -12,7 +12,41 @@ tags:
 - name: Feature Flags
   description: 'Feature flags within a resolved organization + project — mirrors
 
-    EnvironmentsController''s resolve-then-dispatch shape one level deeper.'
+    EnvironmentsController''s resolve-then-dispatch shape one level deeper.
+
+    `{project}` is resolved key-or-guid, scoped to the resolved org (with the service-token
+
+    project allowlist forwarded), via ResolveProjectIdAsync
+
+    for every action. `{flag}` (get/update/archive/restore/delete) is then resolved
+
+    key-or-guid, scoped to the resolved project, via
+
+    ResolveFlagIdAsync. Dispatched commands/queries always
+
+    use the resolved GUIDs, never the raw route strings. Writes (create/update/archive/restore/
+
+    delete) require at least Member
+
+    (RequireRole); a Viewer attempting one gets a 403
+
+    `forbidden` envelope. Flag deletion/variation-removal guards (`FLAG_HAS_DEPENDENTS`,
+
+    etc.) surface as-is via the existing handlers'' custom
+
+    ValidationException, which
+
+    PublicApiExceptionFilterAttribute maps to a 400 `validation_failed`
+
+    envelope automatically; the flag cap on create and restore throws its subclass
+
+    PlanLimitExceededException, a 403
+
+    `plan_limit_reached`. No action here special-cases either. Defers flag *runtime config*
+
+    (env-config, toggle, targeting rules, prerequisites) and variations to their own controllers
+
+    (phase 3b Task 3 / phase 3c).'
 paths:
   /api/v1/orgs/{org}/projects/{project}/flags:
     post:
@@ -27,7 +61,9 @@ paths:
 
         the handler''s own validation failure. Re-fetches via GetFeatureFlagQuery so
 
-        the response reflects exactly what was persisted (e.g. server-assigned variation ids).'
+        the response reflects exactly what was persisted (e.g. server-assigned variation ids). A flag
+
+        past the plan''s per-project cap on active flags is a 403 `plan_limit_reached`.'
       parameters:
       - name: org
         in: path
@@ -65,7 +101,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PublicFlagResponse'
         '400':
-          description: Bad Request
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -151,7 +187,11 @@ paths:
 
         Decode''s "garbage input degrades gracefully" precedent)
 
-        rather than a 400, since it''s a non-critical list filter, not a mutation.'
+        rather than a 400, since it''s a non-critical list filter, not a mutation. `owner` filters
+
+        by owner: an email (an active member, case-insensitive) or `none` for unowned flags.
+
+        `permanent` filters to permanent (`true`) or temporary (`false`) flags.'
       parameters:
       - name: org
         in: path
@@ -188,6 +228,14 @@ paths:
         in: query
         schema:
           type: string
+      - name: owner
+        in: query
+        schema:
+          type: string
+      - name: permanent
+        in: query
+        schema:
+          type: boolean
       responses:
         '200':
           description: OK
@@ -254,11 +302,19 @@ paths:
       summary: Lists confidently-dead (or, with `staleness=stale`, stale-or-dead) flags the…
       description: 'Only flags the staleness engine marks at or
 
-        above the requested tier via a decisive StuckRolledOut/StuckRolledBack reason are returned;
+        above the requested tier with a settled value are returned: a decisive StuckRolledOut/StuckRolledBack
 
-        ZeroTraffic/CreatedUnused, cross-env-divergent, and archived flags are omitted (no confident code
+        reason, or ZeroTraffic/CreatedUnused when no environment saw traffic and every environment''s
 
-        treatment). The ONLY public projection of staleness.'
+        configuration serves one fixed variation (enabled, no rules, no prerequisites). Cross-env-divergent
+
+        flags, flags without traffic whose configuration could serve more than one value, and archived
+
+        flags are omitted (no confident code treatment). The ONLY public projection of staleness.
+
+        Each item''s `blockedBy` names the live flags that still list it as a prerequisite; while
+
+        it is non-empty the flag cannot be archived (`FLAG_HAS_DEPENDENTS`), so remove those first.'
       parameters:
       - name: org
         in: path
@@ -368,10 +424,19 @@ paths:
         required: true
         schema:
           type: string
+      - name: If-Match
+        in: header
+        description: Optional. An ETag of this resource. The response is 200 only if it is still the current one; otherwise 412 `precondition_failed`. `*` or no header always reads.
+        schema:
+          type: string
       responses:
         '200':
           description: OK
           headers:
+            ETag:
+              description: 'Strong ETag of the resource''s whole body as sent to this caller: it changes whenever anything in the body does. Send it back as If-Match on a PUT.'
+              schema:
+                type: string
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
@@ -384,6 +449,19 @@ paths:
                 $ref: '#/components/schemas/PublicFlagResponse'
         '404':
           description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '412':
+          description: The resource's current ETag is not the If-Match one.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -452,6 +530,11 @@ paths:
         required: true
         schema:
           type: string
+      - name: If-Match
+        in: header
+        description: Optional. The ETag from a GET of this resource. The write applies only if the resource still has that ETag, meaning nothing in its body has changed since; otherwise 412 `precondition_failed`. `*` or no header applies the write unconditionally.
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -464,9 +547,26 @@ paths:
             schema:
               $ref: '#/components/schemas/PublicUpdateFeatureFlagRequest'
       responses:
+        '412':
+          description: The resource changed since the If-Match ETag.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
         '204':
           description: No Content
           headers:
+            ETag:
+              description: 'Strong ETag of the resource''s whole body as sent to this caller: it changes whenever anything in the body does. Send it back as If-Match on a PUT.'
+              schema:
+                type: string
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
@@ -569,7 +669,7 @@ paths:
             X-RateLimit-Reset:
               $ref: '#/components/headers/X-RateLimit-Reset'
         '400':
-          description: Bad Request
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -639,11 +739,789 @@ paths:
                 $ref: '#/components/schemas/PublicApiErrorEnvelope'
       operationId: deleteApiV1OrgsByOrgProjectsByProjectFlagsByFlag
       x-operation-id-source: derived
-  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/archive:
-    post:
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/expiry:
+    put:
       tags:
       - Feature Flags
-      summary: Archives a flag
+      summary: Sets the flag's advisory expiry date
+      description: 'Evaluation never changes when it passes — the flag is
+
+        reported stale so it can be cleaned up. Requires at least Member. `expiresAtUtc` takes a
+
+        date (`2026-12-01`), which means the end of that day in UTC, the same as picking it in the
+
+        dashboard, or a full ISO-8601 timestamp, which is stored exactly. It must be in the future
+
+        (400 `EXPIRY_IN_PAST`), so today''s date is accepted, and the flag-expiration feature must
+
+        be enabled (400 `FEATURE_NOT_ENABLED`). A permanent flag can''t have a date
+
+        (400 `PERMANENT_FLAG_HAS_EXPIRY`).'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicSetFlagExpiryRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicSetFlagExpiryRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicSetFlagExpiryRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectFlagsByFlagExpiry
+      x-operation-id-source: derived
+    delete:
+      tags:
+      - Feature Flags
+      summary: Removes the flag's expiry date
+      description: 'Requires at least Member. Always allowed, even when
+
+        the flag-expiration feature is disabled.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: deleteApiV1OrgsByOrgProjectsByProjectFlagsByFlagExpiry
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/owner:
+    put:
+      tags:
+      - Feature Flags
+      summary: Assigns the flag's owner by email
+      description: 'Requires at least Member. The email must belong to an
+
+        active member of the organization (400 `OWNER_NOT_MEMBER`) and the flag-ownership feature
+
+        must be enabled (400 `FEATURE_NOT_ENABLED`).'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicSetFlagOwnerRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicSetFlagOwnerRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicSetFlagOwnerRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectFlagsByFlagOwner
+      x-operation-id-source: derived
+    delete:
+      tags:
+      - Feature Flags
+      summary: Leaves the flag unowned
+      description: 'Requires at least Member. Always allowed, even when the
+
+        flag-ownership feature is disabled.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: deleteApiV1OrgsByOrgProjectsByProjectFlagsByFlagOwner
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/permanent:
+    put:
+      tags:
+      - Feature Flags
+      summary: 'Marks the flag permanent: a kill switch, ops toggle or entitlement gate that is…'
+      description: 'A permanent flag is never offered as a removal candidate and never reported past expiry.
+
+        Requires at least Member. The flag can''t have an expiry date (400 `PERMANENT_FLAG_HAS_EXPIRY`;
+
+        remove the date first) and the flag-permanence feature must be enabled (400 `FEATURE_NOT_ENABLED`).'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectFlagsByFlagPermanent
+      x-operation-id-source: derived
+    delete:
+      tags:
+      - Feature Flags
+      summary: Makes the flag temporary again
+      description: 'Requires at least Member. Always allowed, even when the
+
+        flag-permanence feature is disabled.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: deleteApiV1OrgsByOrgProjectsByProjectFlagsByFlagPermanent
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/removal-pr:
+    put:
+      tags:
+      - Feature Flags
+      summary: Records the pull request that removes this flag from code, so the flag's owner…
+      description: 'Called by the Featureflip Flag Cleanup Action. Requires at least Member. The URL
+
+        must be an https pull request URL (400 `validation_failed`).'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicSetFlagRemovalPrRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicSetFlagRemovalPrRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicSetFlagRemovalPrRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectFlagsByFlagRemovalPr
+      x-operation-id-source: derived
+    delete:
+      tags:
+      - Feature Flags
+      summary: Forgets the flag's removal pull request
       description: Requires at least Member.
       parameters:
       - name: org
@@ -671,6 +1549,132 @@ paths:
               $ref: '#/components/headers/X-RateLimit-Remaining'
             X-RateLimit-Reset:
               $ref: '#/components/headers/X-RateLimit-Reset'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: deleteApiV1OrgsByOrgProjectsByProjectFlagsByFlagRemovalPr
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/flags/{flag}/archive:
+    post:
+      tags:
+      - Feature Flags
+      summary: Archives a flag
+      description: Requires at least Member.
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: flag
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: force
+        in: query
+        description: 'Archive even though live traffic is still evaluating the flag. Without it the request is
+
+          refused with `FLAG_RECENTLY_EVALUATED` naming the environments still reading it — which
+
+          usually means the removal has merged but not yet deployed.'
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
         '403':
           description: Forbidden
           headers:
@@ -734,7 +1738,11 @@ paths:
       tags:
       - Feature Flags
       summary: Restores a previously archived flag
-      description: Requires at least Member.
+      description: 'Requires at least Member. An archived flag doesn''t count
+
+        toward the plan''s per-project flag cap, so restoring one into a full project is a 403
+
+        `plan_limit_reached`.'
       parameters:
       - name: org
         in: path
@@ -776,6 +1784,19 @@ paths:
                 $ref: '#/components/schemas/PublicApiErrorEnvelope'
         '404':
           description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -934,10 +1955,19 @@ paths:
         required: true
         schema:
           type: string
+      - name: If-Match
+        in: header
+        description: Optional. An ETag of this resource. The response is 200 only if it is still the current one; otherwise 412 `precondition_failed`. `*` or no header always reads.
+        schema:
+          type: string
       responses:
         '200':
           description: OK
           headers:
+            ETag:
+              description: 'Strong ETag of the resource''s whole body as sent to this caller: it changes whenever anything in the body does. Send it back as If-Match on a PUT.'
+              schema:
+                type: string
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
@@ -950,6 +1980,19 @@ paths:
                 $ref: '#/components/schemas/PublicFlagEnvConfigResponse'
         '404':
           description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '412':
+          description: The resource's current ETag is not the If-Match one.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -1023,6 +2066,11 @@ paths:
         required: true
         schema:
           type: string
+      - name: If-Match
+        in: header
+        description: Optional. The ETag from a GET of this resource. The write applies only if the resource still has that ETag, meaning nothing in its body has changed since; otherwise 412 `precondition_failed`. `*` or no header applies the write unconditionally.
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -1035,9 +2083,26 @@ paths:
             schema:
               $ref: '#/components/schemas/PublicUpdateFlagEnvConfigRequest'
       responses:
+        '412':
+          description: The resource changed since the If-Match ETag.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
         '204':
           description: No Content
           headers:
+            ETag:
+              description: 'Strong ETag of the resource''s whole body as sent to this caller: it changes whenever anything in the body does. Send it back as If-Match on a PUT.'
+              schema:
+                type: string
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
@@ -1164,7 +2229,7 @@ paths:
             X-RateLimit-Reset:
               $ref: '#/components/headers/X-RateLimit-Reset'
         '400':
-          description: Bad Request
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -1267,10 +2332,19 @@ paths:
         required: true
         schema:
           type: string
+      - name: If-Match
+        in: header
+        description: Optional. An ETag of this resource. The response is 200 only if it is still the current one; otherwise 412 `precondition_failed`. `*` or no header always reads.
+        schema:
+          type: string
       responses:
         '200':
           description: OK
           headers:
+            ETag:
+              description: 'Strong ETag of the resource''s whole body as sent to this caller: it changes whenever anything in the body does. Send it back as If-Match on a PUT.'
+              schema:
+                type: string
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
@@ -1283,6 +2357,19 @@ paths:
                 $ref: '#/components/schemas/PublicTargetingConfigResponse'
         '404':
           description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '412':
+          description: The resource's current ETag is not the If-Match one.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -1356,6 +2443,11 @@ paths:
         required: true
         schema:
           type: string
+      - name: If-Match
+        in: header
+        description: Optional. The ETag from a GET of this resource. The write applies only if the resource still has that ETag, meaning nothing in its body has changed since; otherwise 412 `precondition_failed`. `*` or no header applies the write unconditionally.
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -1368,9 +2460,26 @@ paths:
             schema:
               $ref: '#/components/schemas/PublicPutTargetingRequest'
       responses:
+        '412':
+          description: The resource changed since the If-Match ETag.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
         '204':
           description: No Content
           headers:
+            ETag:
+              description: 'Strong ETag of the resource''s whole body as sent to this caller: it changes whenever anything in the body does. Send it back as If-Match on a PUT.'
+              schema:
+                type: string
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
@@ -1507,7 +2616,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PublicTargetingRuleResponse'
         '400':
-          description: Bad Request
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -1609,10 +2718,19 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: If-Match
+        in: header
+        description: Optional. An ETag of this resource. The response is 200 only if it is still the current one; otherwise 412 `precondition_failed`. `*` or no header always reads.
+        schema:
+          type: string
       responses:
         '200':
           description: OK
           headers:
+            ETag:
+              description: 'Strong ETag of the resource''s whole body as sent to this caller: it changes whenever anything in the body does. Send it back as If-Match on a PUT.'
+              schema:
+                type: string
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
@@ -1625,6 +2743,19 @@ paths:
                 $ref: '#/components/schemas/PublicTargetingRuleResponse'
         '404':
           description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '412':
+          description: The resource's current ETag is not the If-Match one.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -1700,6 +2831,11 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: If-Match
+        in: header
+        description: Optional. The ETag from a GET of this resource. The write applies only if the resource still has that ETag, meaning nothing in its body has changed since; otherwise 412 `precondition_failed`. `*` or no header applies the write unconditionally.
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -1712,9 +2848,26 @@ paths:
             schema:
               $ref: '#/components/schemas/PublicUpdateTargetingRuleRequest'
       responses:
+        '412':
+          description: The resource changed since the If-Match ETag.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
         '204':
           description: No Content
           headers:
+            ETag:
+              description: 'Strong ETag of the resource''s whole body as sent to this caller: it changes whenever anything in the body does. Send it back as If-Match on a PUT.'
+              schema:
+                type: string
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
             X-RateLimit-Remaining:
@@ -1860,6 +3013,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
         '401':
           description: Authentication is required, or the supplied API token is invalid or expired.
           headers:
@@ -1968,6 +3134,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
         '401':
           description: Authentication is required, or the supplied API token is invalid or expired.
           headers:
@@ -2052,7 +3231,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PublicVariationResponse'
         '400':
-          description: Bad Request
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -2197,6 +3376,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
         '401':
           description: Authentication is required, or the supplied API token is invalid or expired.
           headers:
@@ -2277,7 +3469,7 @@ paths:
             X-RateLimit-Reset:
               $ref: '#/components/headers/X-RateLimit-Reset'
         '400':
-          description: Bad Request
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -2349,72 +3541,56 @@ paths:
       x-operation-id-source: derived
 components:
   schemas:
-    PublicConditionResponse:
+    PublicConditionGroupRequest:
+      required:
+      - operator
+      - conditions
       type: object
       properties:
-        attribute:
-          type:
-          - string
-          - 'null'
         operator:
           enum:
-          - Equals
-          - NotEquals
-          - Contains
-          - NotContains
-          - GreaterThan
-          - LessThan
-          - GreaterThanOrEqual
-          - LessThanOrEqual
-          - In
-          - NotIn
-          - MatchesRegex
-          - StartsWith
-          - EndsWith
-          - Before
-          - After
-          - SemverEquals
-          - SemverGreaterThan
-          - SemverGreaterThanOrEqual
-          - SemverLessThan
-          - SemverLessThanOrEqual
+          - And
+          - Or
           type:
           - string
           - 'null'
-          description: 'Allowed values: Equals, NotEquals, Contains, NotContains, GreaterThan, LessThan, GreaterThanOrEqual, LessThanOrEqual, In, NotIn, MatchesRegex, StartsWith, EndsWith, Before, After, SemverEquals, SemverGreaterThan, SemverGreaterThanOrEqual, SemverLessThan, SemverLessThanOrEqual.'
-        values:
+          description: 'Allowed values: And, Or.'
+        conditions:
           type:
           - array
           - 'null'
           items:
-            type: string
-        negate:
-          type: boolean
+            $ref: '#/components/schemas/PublicConditionRequest'
       additionalProperties: false
-      description: 'A single condition within a PublicConditionGroupResponse. Maps 1:1 onto
-
-        ConditionDto. Operator is a bare wire string naming one of the
-
-        `OperatorType` members (e.g. `"Equals"`, `"In"`).'
-    PublicFlagRemovalCandidatePagedResult:
+      description: Request-side condition group, symmetric with PublicConditionGroupResponse.
+    PublicUpdateVariationRequest:
+      required:
+      - name
+      - value
       type: object
       properties:
-        items:
+        name:
           type:
-          - array
+          - string
           - 'null'
-          items:
-            $ref: '#/components/schemas/PublicFlagRemovalCandidate'
-        next_cursor:
+        value:
+          type:
+          - string
+          - 'null'
+        description:
           type:
           - string
           - 'null'
       additionalProperties: false
-      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+      description: 'Request body for
 
-        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+        `PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations/{variationId}`. The
 
-        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+        variation''s key is immutable via this endpoint (mirrors
+
+        `UpdateVariationCommand`, which
+
+        carries no `Key`).'
     PublicUpdateFlagEnvConfigRequest:
       type: object
       properties:
@@ -2462,57 +3638,166 @@ components:
         prerequisites:
         - prerequisiteFlagKey: checkout-api-enabled
           expectedVariationKey: 'true'
-    PublicFlagListItem:
+    PublicPlanLimit:
+      required:
+      - resource
+      - plan
+      - max
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-        key:
+        resource:
           type:
           - string
           - 'null'
-        name:
+        plan:
           type:
           - string
           - 'null'
-        type:
+        max:
+          type: integer
+          format: int32
+      additionalProperties: false
+      description: 'The cap behind a `plan_limit_reached` error. `resource` is the capped collection
+
+        (`projects`, `environments`, `flags`, `webhooks`, `members`);
+
+        `plan` is the plan''s wire name, as `GET /api/v1/orgs/{org}` returns it; `max` is
+
+        the cap. The environment and flag caps are per project.'
+    PublicConditionRequest:
+      required:
+      - attribute
+      - operator
+      - values
+      type: object
+      properties:
+        attribute:
+          type:
+          - string
+          - 'null'
+        operator:
           enum:
-          - Boolean
-          - String
-          - Number
-          - Json
+          - Equals
+          - NotEquals
+          - Contains
+          - NotContains
+          - GreaterThan
+          - LessThan
+          - GreaterThanOrEqual
+          - LessThanOrEqual
+          - In
+          - NotIn
+          - MatchesRegex
+          - StartsWith
+          - EndsWith
+          - Before
+          - After
+          - SemverEquals
+          - SemverGreaterThan
+          - SemverGreaterThanOrEqual
+          - SemverLessThan
+          - SemverLessThanOrEqual
           type:
           - string
           - 'null'
-          description: 'Allowed values: Boolean, String, Number, Json.'
-        isArchived:
-          type: boolean
-        clientSideVisible:
-          type: boolean
-        tags:
+          description: 'Allowed values: Equals, NotEquals, Contains, NotContains, GreaterThan, LessThan, GreaterThanOrEqual, LessThanOrEqual, In, NotIn, MatchesRegex, StartsWith, EndsWith, Before, After, SemverEquals, SemverGreaterThan, SemverGreaterThanOrEqual, SemverLessThan, SemverLessThanOrEqual.'
+        values:
           type:
           - array
           - 'null'
           items:
             type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
+        negate:
+          type: boolean
       additionalProperties: false
-      description: 'Public list-item representation of a feature flag, returned by
+      description: Request-side condition, symmetric with PublicConditionResponse.
+    PublicConditionGroupResponse:
+      required:
+      - operator
+      - conditions
+      type: object
+      properties:
+        operator:
+          enum:
+          - And
+          - Or
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: And, Or.'
+        conditions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicConditionResponse'
+      additionalProperties: false
+      description: 'A condition group within a PublicTargetingRuleResponse. Maps 1:1 onto
 
-        `GET .../flags`. Narrower than PublicFlagResponse — drops
+        ConditionGroupDto. Operator is a bare wire string naming one of
 
-        Variations (a summary-only shape upstream) and
+        the `ConditionGroupOperator` members (`"And"`/`"Or"`) —
 
-        Staleness, matching the "list is narrower than detail"
+        groups are ANDed together at the rule level; within a group, its conditions combine using
 
-        split already present on the Application-layer DTOs.'
+        this operator.'
+    NextAction:
+      required:
+      - method
+      - path
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    PublicReorderRulesRequest:
+      required:
+      - ruleIds
+      type: object
+      properties:
+        ruleIds:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+            format: uuid
+      additionalProperties: false
+      description: 'Request body for `PUT .../rules/reorder`. Must include every existing rule id exactly
+
+        once — `ReorderTargetingRulesCommandHandler` rejects duplicate, omitted, or unknown rule
+
+        ids with `BadRequestException`, surfaced as an HTTP 400 `bad_request` envelope
+
+        carrying the handler''s message.'
+    PublicPrerequisiteDto:
+      required:
+      - prerequisiteFlagKey
+      - expectedVariationKey
+      type: object
+      properties:
+        prerequisiteFlagKey:
+          type:
+          - string
+          - 'null'
+        expectedVariationKey:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'A single prerequisite entry on a flag''s per-environment config. Maps 1:1 onto
+
+        PrerequisiteDto (read side) and PrerequisiteInput (write side).'
     PublicTargetingConfigResponse:
+      required:
+      - isEnabled
+      - rules
       type: object
       properties:
         isEnabled:
@@ -2538,13 +3823,17 @@ components:
         `FlagEnvironmentConfiguration.IsEnabled` (whether the flag is on in this environment at
 
         all), not anything specific to targeting itself.'
-    PublicFlagResponse:
+    PublicFlagOwner:
+      required:
+      - id
+      - email
+      - name
       type: object
       properties:
         id:
           type: string
           format: uuid
-        key:
+        email:
           type:
           - string
           - 'null'
@@ -2552,7 +3841,20 @@ components:
           type:
           - string
           - 'null'
-        description:
+      additionalProperties: false
+      description: A flag's owner as returned on flag reads. Null means the flag is unowned.
+    PublicCreateFeatureFlagRequest:
+      required:
+      - key
+      - name
+      - type
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
           type:
           - string
           - 'null'
@@ -2566,66 +3868,193 @@ components:
           - string
           - 'null'
           description: 'Allowed values: Boolean, String, Number, Json.'
-        isArchived:
-          type: boolean
-        clientSideVisible:
-          type: boolean
+        description:
+          type:
+          - string
+          - 'null'
         tags:
           type:
           - array
           - 'null'
           items:
             type: string
-        variations:
+        initialVariations:
           type:
           - array
           - 'null'
           items:
-            $ref: '#/components/schemas/PublicVariationResponse'
-        createdAt:
-          type: string
+            $ref: '#/components/schemas/PublicCreateVariationDto'
+        clientSideVisible:
+          type: boolean
+        expiresAtUtc:
+          type:
+          - string
+          - 'null'
           format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+        ownerEmail:
+          type:
+          - string
+          - 'null'
+        isPermanent:
+          type: boolean
       additionalProperties: false
-      description: 'Public detail representation of a feature flag, returned by
+      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/flags`. Named distinctly
 
-        `GET .../flags/{flag}` and the body of a successful create. Drops internal/dashboard-only
+        from the dashboard''s own `CreateFeatureFlagRequest`
 
-        fields present on FeatureFlagDto — notably `ProjectId` (implicit in the
+        — see PublicCreateEnvironmentRequest for the
 
-        route) and `Staleness` (an internal analytics signal, not part of the public contract).'
+        schemaId-collision rationale (both controllers share one Swagger document). Type
+
+        is passed through verbatim to Type, which itself takes a
+
+        bare string (Boolean/String/Number/Json) rather than the domain enum — invalid values surface
+
+        as the handler''s own validation failure, not a controller-level 400. ExpiresAtUtc is
+
+        optional and advisory; a bare date (`2026-12-01`) means the end of that day in UTC, and a full
+
+        timestamp is stored exactly. It must be in the future and requires the flag-expiration feature
+
+        (400 `EXPIRY_IN_PAST` / `FEATURE_NOT_ENABLED`). OwnerEmail optionally names
+
+        the owner (an active member, matched case-insensitively; requires the flag-ownership feature —
+
+        400 `OWNER_NOT_MEMBER` / `FEATURE_NOT_ENABLED`). Omitted, the owner is the caller when
+
+        the caller is a member, so a service token creates an unowned flag. IsPermanent marks
+
+        the flag permanent (a kill switch, ops toggle or entitlement that is meant to stay; never reported for
+
+        cleanup). It requires the flag-permanence feature and can''t be combined with ExpiresAtUtc
+
+        (400 `FEATURE_NOT_ENABLED` / `PERMANENT_FLAG_HAS_EXPIRY`).'
       example:
-        id: 0197b6a0-5f2a-7c3e-9b4d-1e2f3a4b5c6d
         key: new-checkout-flow
         name: New Checkout Flow
-        description: Gates the redesigned checkout experience.
         type: Boolean
-        isArchived: false
-        clientSideVisible: false
+        description: Gates the redesigned checkout experience.
         tags:
         - checkout
         - q3-launch
-        variations:
-        - id: 0197b6a0-6a1b-7d4f-8c2e-2f3a4b5c6d7e
-          key: 'true'
+        initialVariations:
+        - key: 'true'
           name: Enabled
           value: 'true'
           description: Serve the new checkout.
-        - id: 0197b6a0-6a1b-7d4f-8c2e-3a4b5c6d7e8f
-          key: 'false'
+        - key: 'false'
           name: Disabled
           value: 'false'
           description: Serve the legacy checkout.
-        createdAt: '2026-06-01T12:00:00Z'
-        updatedAt: '2026-06-15T08:30:00Z'
+        clientSideVisible: false
+    PublicPutTargetingRequest:
+      type: object
+      properties:
+        rules:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicCreateTargetingRuleRequest'
+      additionalProperties: false
+      description: 'Request body for `PUT .../targeting` — a declarative full replace of the environment''s
+
+        ordered targeting rule set. Rules are applied in array order (index = priority, so the array
+
+        order IS the evaluation order). Rules is nullable so that an OMITTED `rules`
+
+        field (a body of `{}`) binds successfully instead of failing ASP.NET Core''s implicit
+
+        required-property check on non-nullable reference types — both an omitted `rules` field
+
+        and an explicit empty list (`{ "rules": [] }`) clear all targeting rules for the
+
+        environment. Each element is a PublicCreateTargetingRuleRequest (identical to the
+
+        `POST .../rules` body), so `UserSegmentId` is supported — segment-scoped rules can be
+
+        submitted through this endpoint. The replace is atomic (all-or-nothing): the whole rule set is
+
+        swapped in one transaction, or nothing changes.'
+    PublicCreateVariationDto:
+      required:
+      - key
+      - name
+      - value
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        value:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'A variation supplied at flag-creation time. Maps 1:1 onto
+
+        CreateVariationDto.'
+    ActionCapability:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+    PublicAddVariationRequest:
+      required:
+      - key
+      - name
+      - value
+      type: object
+      properties:
+        key:
+          type:
+          - string
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        value:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for
+
+        `POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations`. Named distinctly
+
+        from the dashboard''s own `AddVariationRequest` —
+
+        see PublicCreateEnvironmentRequest for the schemaId-collision rationale (both
+
+        controllers share one Swagger document).'
+      example:
+        key: express
+        name: Express Checkout
+        value: express
+        description: One-click express checkout variant.
     PublicCreateTargetingRuleRequest:
+      required:
+      - conditionGroups
       type: object
       properties:
         description:
@@ -2678,41 +4107,12 @@ components:
             - US
             - CA
             negate: false
-    PublicAddVariationRequest:
-      type: object
-      properties:
-        key:
-          type:
-          - string
-          - 'null'
-        name:
-          type:
-          - string
-          - 'null'
-        value:
-          type:
-          - string
-          - 'null'
-        description:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'Request body for
-
-        `POST /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations`. Named distinctly
-
-        from the dashboard''s own `AddVariationRequest` —
-
-        see PublicCreateEnvironmentRequest for the schemaId-collision rationale (both
-
-        controllers share one Swagger document).'
-      example:
-        key: express
-        name: Express Checkout
-        value: express
-        description: One-click express checkout variant.
     PublicTargetingRuleResponse:
+      required:
+      - id
+      - priority
+      - variationId
+      - conditionGroups
       type: object
       properties:
         id:
@@ -2773,7 +4173,108 @@ components:
             - US
             - CA
             negate: false
-    PublicVariationResponse:
+    PublicApiErrorEnvelope:
+      required:
+      - error
+      - message
+      - docs_url
+      type: object
+      properties:
+        error:
+          type:
+          - string
+          - 'null'
+        message:
+          type:
+          - string
+          - 'null'
+        docs_url:
+          type:
+          - string
+          - 'null'
+        fields:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        retry_after:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        did_you_mean:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        next_actions:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/NextAction'
+        connection_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        plan_limit:
+          $ref: '#/components/schemas/PublicPlanLimit'
+      additionalProperties: false
+      description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
+
+        are frozen snake_case too (`error`, `message`, `docs_url`, `fields`,
+
+        `retry_after`) — the global camelCase naming policy would otherwise emit
+
+        `docsUrl`/`retryAfter`, breaking the published spec. !:JsonPropertyName
+
+        always wins over the policy, so these are pinned explicitly rather than relying on the
+
+        property names already being lowercase for the single-word ones.
+
+        `did_you_mean`, `next_actions` and `connection_id` are ADDITIVE optional keys
+
+        (null → omitted via the global `DefaultIgnoreCondition = WhenWritingNull`), so
+
+        pre-existing error bodies are byte-for-byte unchanged when they''re absent.
+
+
+        `connection_id` is present only on the `sso_required` error: the organization
+
+        requires single sign-on, and this credential didn''t come through its identity provider.
+
+        `connection_id` identifies which SSO connection to sign in with.
+
+        `plan_limit` is present only on the `plan_limit_reached` error: which plan cap the
+
+        request would have exceeded, so a client can branch on it without parsing `message`.'
+      example:
+        error: not_found
+        message: Flag 'new-checkout-flw' was not found in project 'checkout'.
+        docs_url: https://featureflip.io/docs/management-api/errors/not_found
+        did_you_mean:
+        - new-checkout-flow
+        next_actions:
+        - method: GET
+          path: /api/v1/orgs/acme/projects/checkout/flags
+    PublicFlagResponse:
+      required:
+      - id
+      - key
+      - name
+      - type
+      - isArchived
+      - clientSideVisible
+      - tags
+      - variations
+      - createdAt
+      - updatedAt
+      - isPermanent
       type: object
       properties:
         id:
@@ -2787,35 +4288,7 @@ components:
           type:
           - string
           - 'null'
-        value:
-          type:
-          - string
-          - 'null'
         description:
-          type:
-          - string
-          - 'null'
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
-      additionalProperties: false
-      description: A single variation on a flag, as returned in Variations.
-      example:
-        id: 0197b6a0-6a1b-7d4f-8c2e-2f3a4b5c6d7e
-        key: 'true'
-        name: Enabled
-        value: 'true'
-        description: Serve the new checkout.
-    PublicCreateFeatureFlagRequest:
-      type: object
-      properties:
-        key:
-          type:
-          - string
-          - 'null'
-        name:
           type:
           - string
           - 'null'
@@ -2829,56 +4302,94 @@ components:
           - string
           - 'null'
           description: 'Allowed values: Boolean, String, Number, Json.'
-        description:
-          type:
-          - string
-          - 'null'
+        isArchived:
+          type: boolean
+        clientSideVisible:
+          type: boolean
         tags:
           type:
           - array
           - 'null'
           items:
             type: string
-        initialVariations:
+        variations:
           type:
           - array
           - 'null'
           items:
-            $ref: '#/components/schemas/PublicCreateVariationDto'
-        clientSideVisible:
+            $ref: '#/components/schemas/PublicVariationResponse'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        expiresAtUtc:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        owner:
+          $ref: '#/components/schemas/PublicFlagOwner'
+        removalPrUrl:
+          type:
+          - string
+          - 'null'
+        isPermanent:
           type: boolean
+        effectiveExpiresAtUtc:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        expirySource:
+          type:
+          - string
+          - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
       additionalProperties: false
-      description: 'Request body for `POST /api/v1/orgs/{org}/projects/{project}/flags`. Named distinctly
+      description: 'Public detail representation of a feature flag, returned by
 
-        from the dashboard''s own `CreateFeatureFlagRequest`
+        `GET .../flags/{flag}` and the body of a successful create. Drops internal/dashboard-only
 
-        — see PublicCreateEnvironmentRequest for the
+        fields present on FeatureFlagDto — notably `ProjectId` (implicit in the
 
-        schemaId-collision rationale (both controllers share one Swagger document). Type
+        route) and `Staleness` (an internal analytics signal, not part of the public contract).
 
-        is passed through verbatim to Type, which itself takes a
+        EffectiveExpiresAtUtc is when the flag counts as past expiry, from its own ExpiresAtUtc
 
-        bare string (Boolean/String/Number/Json) rather than the domain enum — invalid values surface
+        or its project''s default lifetime; ExpirySource says which (`explicit` / `project-default`),
 
-        as the handler''s own validation failure, not a controller-level 400.'
+        both null when neither applies.'
       example:
+        id: 0197b6a0-5f2a-7c3e-9b4d-1e2f3a4b5c6d
         key: new-checkout-flow
         name: New Checkout Flow
-        type: Boolean
         description: Gates the redesigned checkout experience.
+        type: Boolean
+        isArchived: false
+        clientSideVisible: false
         tags:
         - checkout
         - q3-launch
-        initialVariations:
-        - key: 'true'
+        variations:
+        - id: 0197b6a0-6a1b-7d4f-8c2e-2f3a4b5c6d7e
+          key: 'true'
           name: Enabled
           value: 'true'
           description: Serve the new checkout.
-        - key: 'false'
+        - id: 0197b6a0-6a1b-7d4f-8c2e-3a4b5c6d7e8f
+          key: 'false'
           name: Disabled
           value: 'false'
           description: Serve the legacy checkout.
-        clientSideVisible: false
+        createdAt: '2026-06-01T12:00:00Z'
+        updatedAt: '2026-06-15T08:30:00Z'
+        isPermanent: false
     PublicToggleFlagRequest:
       type: object
       properties:
@@ -2902,36 +4413,92 @@ components:
         the flag. The controller rejects a null Enabled with a `validation_failed` 400
 
         so the intent is never ambiguous (#1806).'
-    ActionCapability:
+    PublicFlagRemovalCandidate:
+      required:
+      - key
+      - reason
+      - treatment
+      - status
+      - blockedBy
       type: object
       properties:
-        allowed:
-          type: boolean
+        key:
+          type:
+          - string
+          - 'null'
         reason:
           type:
           - string
           - 'null'
-      additionalProperties: false
-      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
-    PublicReorderRulesRequest:
-      type: object
-      properties:
-        ruleIds:
+        treatment:
+          type: boolean
+        status:
+          type:
+          - string
+          - 'null'
+        blockedBy:
           type:
           - array
           - 'null'
           items:
             type: string
-            format: uuid
       additionalProperties: false
-      description: 'Request body for `PUT .../rules/reorder`. Must include every existing rule id exactly
+      description: 'One dead flag the Featureflip Flag Cleanup Action should remove, returned by
 
-        once — `ReorderTargetingRulesCommandHandler` rejects duplicate, omitted, or unknown rule
+        `GET .../flags/removal-candidates`. `Treatment` is the kill decision: true → keep the
 
-        ids with `BadRequestException`, surfaced as an HTTP 400 `bad_request` envelope
+        flag''s on-branch, false → keep the off-branch. `Status` is the flag''s staleness tier
 
-        carrying the handler''s message.'
+        (`"Stale"` or `"Dead"`, never `"Active"`) — lets a caller distinguish the two when
+
+        `?staleness=stale` widens the response to include both tiers. This is the ONLY public
+
+        projection of staleness — PublicFlagResponse and PublicFlagListItem
+
+        still omit it by design. `BlockedBy` names the live flags that still list this one as a
+
+        prerequisite, sorted by key; while it is non-empty the flag cannot be archived
+
+        (`FLAG_HAS_DEPENDENTS`), so a caller should remove those dependents first.'
+    PublicUpdateFeatureFlagRequest:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        tags:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        clientSideVisible:
+          type:
+          - boolean
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}`. See
+
+        PublicCreateFeatureFlagRequest for why this is named distinctly from the
+
+        dashboard''s `UpdateFeatureFlagRequest`. The flag''s key and type are immutable via this
+
+        endpoint (mirrors `UpdateFeatureFlagCommand`, which has no `Key`/`Type`).'
     PublicFlagEnvConfigResponse:
+      required:
+      - environmentId
+      - environmentKey
+      - isEnabled
+      - defaultVariationId
+      - strategy
+      - prerequisites
       type: object
       properties:
         environmentId:
@@ -2991,239 +4558,61 @@ components:
         prerequisites:
         - prerequisiteFlagKey: checkout-api-enabled
           expectedVariationKey: 'true'
-    PublicFlagListItemPagedResult:
+    PublicSetFlagRemovalPrRequest:
       type: object
       properties:
-        items:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicFlagListItem'
-        next_cursor:
-          type:
-          - string
-          - 'null'
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
-      additionalProperties: false
-      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
-
-        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
-
-        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
-      example:
-        items:
-        - id: 0197b6a0-5f2a-7c3e-9b4d-1e2f3a4b5c6d
-          key: new-checkout-flow
-          name: New Checkout Flow
-          type: Boolean
-          isArchived: false
-          clientSideVisible: false
-          tags:
-          - checkout
-          - q3-launch
-          createdAt: '2026-06-01T12:00:00Z'
-          updatedAt: '2026-06-15T08:30:00Z'
-        next_cursor: MjA
-    PublicPrerequisiteDto:
-      type: object
-      properties:
-        prerequisiteFlagKey:
-          type:
-          - string
-          - 'null'
-        expectedVariationKey:
+        url:
           type:
           - string
           - 'null'
       additionalProperties: false
-      description: 'A single prerequisite entry on a flag''s per-environment config. Maps 1:1 onto
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}/removal-pr`: the
 
-        PrerequisiteDto (read side) and PrerequisiteInput (write side).'
-    PublicApiErrorEnvelope:
+        pull request that removes this flag from code, as opened by the Featureflip Flag Cleanup Action.
+
+        A dedicated sub-resource for the same reason as expiry and owner. `url` must be an https
+
+        pull request URL (`https://{host}/{owner}/{repo}/pull/{number}`).'
+    PublicUpdateTargetingRuleRequest:
+      required:
+      - conditionGroups
       type: object
       properties:
-        error:
+        description:
           type:
           - string
           - 'null'
-        message:
-          type:
-          - string
-          - 'null'
-        docs_url:
-          type:
-          - string
-          - 'null'
-        fields:
-          type:
-          - object
-          - 'null'
-          additionalProperties:
-            type: array
-            items:
-              type: string
-        retry_after:
+        variationId:
+          type: string
+          format: uuid
+        rolloutPercentage:
           type:
           - integer
           - 'null'
           format: int32
-        did_you_mean:
+        userSegmentId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        conditionGroups:
           type:
           - array
           - 'null'
           items:
-            type: string
-        next_actions:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/NextAction'
+            $ref: '#/components/schemas/PublicConditionGroupRequest'
       additionalProperties: false
-      description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
+      description: 'Request body for `PUT .../rules/{ruleId}`. Same shape as
 
-        are frozen snake_case too (`error`, `message`, `docs_url`, `fields`,
+        PublicCreateTargetingRuleRequest — see its remarks on operator
 
-        `retry_after`) — the global camelCase naming policy would otherwise emit
-
-        `docsUrl`/`retryAfter`, breaking the published spec. !:JsonPropertyName
-
-        always wins over the policy, so these are pinned explicitly rather than relying on the
-
-        property names already being lowercase for the single-word ones.
-
-        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
-
-        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
-
-        are byte-for-byte unchanged when they''re absent.'
-      example:
-        error: not_found
-        message: Flag 'new-checkout-flw' was not found in project 'checkout'.
-        docs_url: https://featureflip.io/docs/management-api/errors/not_found
-        did_you_mean:
-        - new-checkout-flow
-        next_actions:
-        - method: GET
-          path: /api/v1/orgs/acme/projects/checkout/flags
-    PublicPutTargetingRequest:
-      type: object
-      properties:
-        rules:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicCreateTargetingRuleRequest'
-      additionalProperties: false
-      description: 'Request body for `PUT .../targeting` — a declarative full replace of the environment''s
-
-        ordered targeting rule set. Rules are applied in array order (index = priority, so the array
-
-        order IS the evaluation order). Rules is nullable so that an OMITTED `rules`
-
-        field (a body of `{}`) binds successfully instead of failing ASP.NET Core''s implicit
-
-        required-property check on non-nullable reference types — both an omitted `rules` field
-
-        and an explicit empty list (`{ "rules": [] }`) clear all targeting rules for the
-
-        environment. Each element is a PublicCreateTargetingRuleRequest (identical to the
-
-        `POST .../rules` body), so `UserSegmentId` is supported — segment-scoped rules can be
-
-        submitted through this endpoint. The replace is atomic (all-or-nothing): the whole rule set is
-
-        swapped in one transaction, or nothing changes.'
-    PublicConditionGroupRequest:
-      type: object
-      properties:
-        operator:
-          enum:
-          - And
-          - Or
-          type:
-          - string
-          - 'null'
-          description: 'Allowed values: And, Or.'
-        conditions:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/PublicConditionRequest'
-      additionalProperties: false
-      description: Request-side condition group, symmetric with PublicConditionGroupResponse.
-    PublicUpdateFeatureFlagRequest:
-      type: object
-      properties:
-        name:
-          type:
-          - string
-          - 'null'
-        description:
-          type:
-          - string
-          - 'null'
-        tags:
-          type:
-          - array
-          - 'null'
-          items:
-            type: string
-        clientSideVisible:
-          type:
-          - boolean
-          - 'null'
-      additionalProperties: false
-      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}`. See
-
-        PublicCreateFeatureFlagRequest for why this is named distinctly from the
-
-        dashboard''s `UpdateFeatureFlagRequest`. The flag''s key and type are immutable via this
-
-        endpoint (mirrors `UpdateFeatureFlagCommand`, which has no `Key`/`Type`).'
-    NextAction:
-      type: object
-      properties:
-        method:
-          type:
-          - string
-          - 'null'
-        path:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-    PublicCreateVariationDto:
-      type: object
-      properties:
-        key:
-          type:
-          - string
-          - 'null'
-        name:
-          type:
-          - string
-          - 'null'
-        value:
-          type:
-          - string
-          - 'null'
-        description:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'A variation supplied at flag-creation time. Maps 1:1 onto
-
-        CreateVariationDto.'
-    PublicConditionRequest:
+        validation/canonicalization, which applies identically here.'
+    PublicConditionResponse:
+      required:
+      - attribute
+      - operator
+      - values
+      - negate
       type: object
       properties:
         attribute:
@@ -3265,73 +4654,88 @@ components:
         negate:
           type: boolean
       additionalProperties: false
-      description: Request-side condition, symmetric with PublicConditionResponse.
-    PublicFlagRemovalCandidate:
+      description: 'A single condition within a PublicConditionGroupResponse. Maps 1:1 onto
+
+        ConditionDto. Operator is a bare wire string naming one of the
+
+        `OperatorType` members (e.g. `"Equals"`, `"In"`).'
+    PublicFlagRemovalCandidatePagedResult:
+      required:
+      - items
       type: object
       properties:
-        key:
-          type:
-          - string
-          - 'null'
-        reason:
-          type:
-          - string
-          - 'null'
-        treatment:
-          type: boolean
-        status:
-          type:
-          - string
-          - 'null'
-      additionalProperties: false
-      description: 'One dead flag the Featureflip Flag Cleanup Action should remove, returned by
-
-        `GET .../flags/removal-candidates`. `Treatment` is the kill decision: true → keep the
-
-        flag''s on-branch, false → keep the off-branch. `Status` is the flag''s staleness tier
-
-        (`"Stale"` or `"Dead"`, never `"Active"`) — lets a caller distinguish the two when
-
-        `?staleness=stale` widens the response to include both tiers. This is the ONLY public
-
-        projection of staleness — PublicFlagResponse and PublicFlagListItem
-
-        still omit it by design.'
-    PublicUpdateTargetingRuleRequest:
-      type: object
-      properties:
-        description:
-          type:
-          - string
-          - 'null'
-        variationId:
-          type: string
-          format: uuid
-        rolloutPercentage:
-          type:
-          - integer
-          - 'null'
-          format: int32
-        userSegmentId:
-          type:
-          - string
-          - 'null'
-          format: uuid
-        conditionGroups:
+        items:
           type:
           - array
           - 'null'
           items:
-            $ref: '#/components/schemas/PublicConditionGroupRequest'
+            $ref: '#/components/schemas/PublicFlagRemovalCandidate'
+        next_cursor:
+          type:
+          - string
+          - 'null'
       additionalProperties: false
-      description: 'Request body for `PUT .../rules/{ruleId}`. Same shape as
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
 
-        PublicCreateTargetingRuleRequest — see its remarks on operator
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
 
-        validation/canonicalization, which applies identically here.'
-    PublicUpdateVariationRequest:
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+    PublicFlagListItemPagedResult:
+      required:
+      - items
       type: object
       properties:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/PublicFlagListItem'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
+      additionalProperties: false
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
+
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
+
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
+      example:
+        items:
+        - id: 0197b6a0-5f2a-7c3e-9b4d-1e2f3a4b5c6d
+          key: new-checkout-flow
+          name: New Checkout Flow
+          type: Boolean
+          isArchived: false
+          clientSideVisible: false
+          tags:
+          - checkout
+          - q3-launch
+          createdAt: '2026-06-01T12:00:00Z'
+          updatedAt: '2026-06-15T08:30:00Z'
+          isPermanent: false
+        next_cursor: MjA
+    PublicVariationResponse:
+      required:
+      - id
+      - key
+      - name
+      - value
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type:
+          - string
+          - 'null'
         name:
           type:
           - string
@@ -3344,54 +4748,150 @@ components:
           type:
           - string
           - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
       additionalProperties: false
-      description: 'Request body for
-
-        `PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}/variations/{variationId}`. The
-
-        variation''s key is immutable via this endpoint (mirrors
-
-        `UpdateVariationCommand`, which
-
-        carries no `Key`).'
-    PublicConditionGroupResponse:
+      description: A single variation on a flag, as returned in Variations.
+      example:
+        id: 0197b6a0-6a1b-7d4f-8c2e-2f3a4b5c6d7e
+        key: 'true'
+        name: Enabled
+        value: 'true'
+        description: Serve the new checkout.
+    PublicFlagListItem:
+      required:
+      - id
+      - key
+      - name
+      - type
+      - isArchived
+      - clientSideVisible
+      - tags
+      - createdAt
+      - updatedAt
+      - isPermanent
       type: object
       properties:
-        operator:
-          enum:
-          - And
-          - Or
+        id:
+          type: string
+          format: uuid
+        key:
           type:
           - string
           - 'null'
-          description: 'Allowed values: And, Or.'
-        conditions:
+        name:
+          type:
+          - string
+          - 'null'
+        type:
+          enum:
+          - Boolean
+          - String
+          - Number
+          - Json
+          type:
+          - string
+          - 'null'
+          description: 'Allowed values: Boolean, String, Number, Json.'
+        isArchived:
+          type: boolean
+        clientSideVisible:
+          type: boolean
+        tags:
           type:
           - array
           - 'null'
           items:
-            $ref: '#/components/schemas/PublicConditionResponse'
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        expiresAtUtc:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        owner:
+          $ref: '#/components/schemas/PublicFlagOwner'
+        removalPrUrl:
+          type:
+          - string
+          - 'null'
+        isPermanent:
+          type: boolean
+        effectiveExpiresAtUtc:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        expirySource:
+          type:
+          - string
+          - 'null'
       additionalProperties: false
-      description: 'A condition group within a PublicTargetingRuleResponse. Maps 1:1 onto
+      description: 'Public list-item representation of a feature flag, returned by
 
-        ConditionGroupDto. Operator is a bare wire string naming one of
+        `GET .../flags`. Narrower than PublicFlagResponse — drops
 
-        the `ConditionGroupOperator` members (`"And"`/`"Or"`) —
+        Variations (a summary-only shape upstream) and
 
-        groups are ANDed together at the rule level; within a group, its conditions combine using
+        Staleness, matching the "list is narrower than detail"
 
-        this operator.'
+        split already present on the Application-layer DTOs.
+
+        EffectiveExpiresAtUtc is when the flag counts as past expiry, from its own ExpiresAtUtc
+
+        or its project''s default lifetime; ExpirySource says which (`explicit` / `project-default`),
+
+        both null when neither applies.'
+    PublicSetFlagOwnerRequest:
+      type: object
+      properties:
+        email:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}/owner`. A dedicated
+
+        sub-resource for the same reason as expiry: the main flag PUT is a full replace, so an owner field
+
+        there would let every client that doesn''t know about owners wipe one. `email` must belong
+
+        to an active member of the organization (case-insensitive).'
+    PublicSetFlagExpiryRequest:
+      type: object
+      properties:
+        expiresAtUtc:
+          type: string
+          format: date-time
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/flags/{flag}/expiry`. Expiry is a
+
+        dedicated sub-resource, deliberately NOT a field on PublicUpdateFeatureFlagRequest: that
+
+        PUT is a full replace, so a new nullable field there would let any client that doesn''t know about
+
+        expiry (the Terraform provider included) wipe it on every update. A bare date means the end of that
+
+        UTC day; a full timestamp is stored exactly.'
   headers:
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
+    X-RateLimit-Reset:
+      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
       schema:
         type: integer
     X-RateLimit-Limit:
       description: The maximum number of requests permitted per rate-limit window for this caller.
       schema:
         type: integer
-    X-RateLimit-Reset:
-      description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
       schema:
         type: integer
   securitySchemes:

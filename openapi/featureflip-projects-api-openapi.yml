@@ -10,14 +10,34 @@ security:
 - Bearer: []
 tags:
 - name: Projects
-  description: Projects within a resolved organization.
+  description: 'Projects within a resolved organization. Every route here carries `{org}`, so
+
+    ResolveTenantFilter has already resolved + access-checked
+
+    it before any action runs — dispatched commands/queries always use
+
+    ResolvedOrgId, never the raw route string.
+
+    `{project}` (get/update/delete) is resolved key-or-guid, scoped to the resolved org, via
+
+    ResolveProjectIdAsync — same addressing pattern as
+
+    OrganizationsController uses for `{org}`. Writes (create/update/delete)
+
+    require at least Member
+
+    (RequireRole); a Viewer attempting one gets a 403
+
+    `forbidden` envelope.'
 paths:
   /api/v1/orgs/{org}/projects:
     post:
       tags:
       - Projects
       summary: Creates a project in the resolved organization
-      description: Requires at least Member.
+      description: 'Requires at least Member. A project past the
+
+        plan''s project cap is a 403 `plan_limit_reached`.'
       parameters:
       - name: org
         in: path
@@ -51,6 +71,19 @@ paths:
                 $ref: '#/components/schemas/ProjectResponse'
         '403':
           description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
           headers:
             X-RateLimit-Limit:
               $ref: '#/components/headers/X-RateLimit-Limit'
@@ -297,6 +330,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
         '401':
           description: Authentication is required, or the supplied API token is invalid or expired.
           headers:
@@ -381,6 +427,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
         '401':
           description: Authentication is required, or the supplied API token is invalid or expired.
           headers:
@@ -413,26 +472,252 @@ paths:
                 $ref: '#/components/schemas/PublicApiErrorEnvelope'
       operationId: deleteApiV1OrgsByOrgProjectsByProject
       x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/default-flag-lifetime:
+    put:
+      tags:
+      - Projects
+      summary: Sets or removes the project's default flag lifetime, in days (1–3650; null…
+      description: 'Temporary
+
+        flags with no expiry date of their own then expire that many days after they were created, reported
+
+        as `expirySource: "project-default"`. Takes effect at the next hourly staleness run. Requires at
+
+        least Member, and the default-flag-lifetime feature to set one (400 `FEATURE_NOT_ENABLED`);
+
+        removing one is always allowed. `days` is required; send `{"days": null}` to remove.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicSetDefaultFlagLifetimeRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublicSetDefaultFlagLifetimeRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublicSetDefaultFlagLifetimeRequest'
+      responses:
+        '204':
+          description: No Content
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+        '400':
+          description: The request is malformed, or it carries an If-Match header, which this endpoint can't evaluate. Send no If-Match, or `*`.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '403':
+          description: Forbidden
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: putApiV1OrgsByOrgProjectsByProjectDefaultFlagLifetime
+      x-operation-id-source: derived
+  /api/v1/orgs/{org}/projects/{project}/default-flag-lifetime/impact:
+    get:
+      tags:
+      - Projects
+      summary: 'Previews a default flag lifetime: how many temporary flags with no expiry date…'
+      description: 'Omit `days` to
+
+        preview removing it.'
+      parameters:
+      - name: org
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: project
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: days
+        in: query
+        schema:
+          type: integer
+          format: int32
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicDefaultFlagLifetimeImpact'
+        '400':
+          description: Bad Request
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '404':
+          description: Not Found
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '401':
+          description: Authentication is required, or the supplied API token is invalid or expired.
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+        '429':
+          description: Rate limit exceeded. Retry after the interval indicated by the Retry-After header.
+          headers:
+            Retry-After:
+              description: Number of seconds to wait before retrying the request.
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicApiErrorEnvelope'
+      operationId: getApiV1OrgsByOrgProjectsByProjectDefaultFlagLifetimeImpact
+      x-operation-id-source: derived
 components:
   schemas:
-    PublicUpdateProjectRequest:
+    ProjectResponsePagedResult:
+      required:
+      - items
       type: object
       properties:
-        name:
+        items:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/ProjectResponse'
+        next_cursor:
           type:
           - string
           - 'null'
-        description:
-          type:
-          - string
-          - 'null'
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
       additionalProperties: false
-      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}`. See
+      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
 
-        PublicCreateProjectRequest for why this is named distinctly from the
+        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
 
-        dashboard''s `UpdateProjectRequest`.'
+        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
     PublicApiErrorEnvelope:
+      required:
+      - error
+      - message
+      - docs_url
       type: object
       properties:
         error:
@@ -472,6 +757,13 @@ components:
           - 'null'
           items:
             $ref: '#/components/schemas/NextAction'
+        connection_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        plan_limit:
+          $ref: '#/components/schemas/PublicPlanLimit'
       additionalProperties: false
       description: 'The frozen public-API error contract. `error` codes are stable snake_case strings. Wire keys
 
@@ -485,11 +777,22 @@ components:
 
         property names already being lowercase for the single-word ones.
 
-        `did_you_mean` and `next_actions` are ADDITIVE optional keys (null → omitted via
+        `did_you_mean`, `next_actions` and `connection_id` are ADDITIVE optional keys
 
-        the global `DefaultIgnoreCondition = WhenWritingNull`), so pre-existing error bodies
+        (null → omitted via the global `DefaultIgnoreCondition = WhenWritingNull`), so
 
-        are byte-for-byte unchanged when they''re absent.'
+        pre-existing error bodies are byte-for-byte unchanged when they''re absent.
+
+
+        `connection_id` is present only on the `sso_required` error: the organization
+
+        requires single sign-on, and this credential didn''t come through its identity provider.
+
+        `connection_id` identifies which SSO connection to sign in with.
+
+        `plan_limit` is present only on the `plan_limit_reached` error: which plan cap the
+
+        request would have exceeded, so a client can branch on it without parsing `message`.'
       example:
         error: not_found
         message: Flag 'new-checkout-flw' was not found in project 'checkout'.
@@ -499,30 +802,132 @@ components:
         next_actions:
         - method: GET
           path: /api/v1/orgs/acme/projects/checkout/flags
-    ActionCapability:
+    PublicSetDefaultFlagLifetimeRequest:
+      required:
+      - days
       type: object
       properties:
-        allowed:
-          type: boolean
-        reason:
+        days:
           type:
-          - string
+          - integer
           - 'null'
+          format: int32
       additionalProperties: false
-      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
-    NextAction:
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}/default-flag-lifetime`. `days`
+
+        is 1–3650, or an explicit null to remove the default. `days` is required: a body without it
+
+        (`{}`, or a misspelled field) is a `validation_failed` 400, never a removal, so a typo
+
+        can''t silently wipe the setting (#3788). A request with no body is rejected too.'
+    ProjectResponse:
+      required:
+      - id
+      - key
+      - name
+      - createdAt
       type: object
       properties:
-        method:
+        id:
+          type: string
+          format: uuid
+        key:
           type:
           - string
           - 'null'
-        path:
+        name:
           type:
           - string
           - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        defaultFlagLifetimeDays:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        _actions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ActionCapability'
+          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
       additionalProperties: false
+      description: 'Public representation of a project, returned by `GET /api/v1/orgs/{org}/projects` (list),
+
+        `GET .../projects/{project}` (detail), and the body of a successful create/update. Drops
+
+        the dashboard-only nested `Environments` collection from ProjectDto — the
+
+        public API surfaces environments via their own endpoint (Task 6), not embedded here.
+
+        UpdatedAt is only populated from ProjectDto (the detail/create
+
+        shape); ProjectListItemDto doesn''t carry it, so list rows leave it `null`.
+
+        DefaultFlagLifetimeDays is the project''s default flag lifetime in days, or null (#3194).'
+      example:
+        id: 0197b69f-1a2b-7c3d-8e4f-5a6b7c8d9e0f
+        key: checkout
+        name: Checkout
+        description: Checkout and payments surfaces.
+        createdAt: '2026-06-01T12:00:00Z'
+        updatedAt: '2026-06-15T08:30:00Z'
+    PublicDefaultFlagLifetimeImpact:
+      required:
+      - newlyPastExpiry
+      - noLongerPastExpiry
+      type: object
+      properties:
+        newlyPastExpiry:
+          type: integer
+          format: int32
+        noLongerPastExpiry:
+          type: integer
+          format: int32
+      additionalProperties: false
+      description: 'Response of `GET .../default-flag-lifetime/impact`: how many temporary flags with no expiry
+
+        date of their own would newly be past expiry, and how many would stop being past it.'
+    PublicPlanLimit:
+      required:
+      - resource
+      - plan
+      - max
+      type: object
+      properties:
+        resource:
+          type:
+          - string
+          - 'null'
+        plan:
+          type:
+          - string
+          - 'null'
+        max:
+          type: integer
+          format: int32
+      additionalProperties: false
+      description: 'The cap behind a `plan_limit_reached` error. `resource` is the capped collection
+
+        (`projects`, `environments`, `flags`, `webhooks`, `members`);
+
+        `plan` is the plan''s wire name, as `GET /api/v1/orgs/{org}` returns it; `max` is
+
+        the cap. The environment and flag caps are per project.'
     PublicCreateProjectRequest:
+      required:
+      - key
+      - name
       type: object
       properties:
         key:
@@ -551,40 +956,11 @@ components:
         key: checkout
         name: Checkout
         description: Checkout and payments surfaces.
-    ProjectResponsePagedResult:
+    PublicUpdateProjectRequest:
+      required:
+      - name
       type: object
       properties:
-        items:
-          type:
-          - array
-          - 'null'
-          items:
-            $ref: '#/components/schemas/ProjectResponse'
-        next_cursor:
-          type:
-          - string
-          - 'null'
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
-      additionalProperties: false
-      description: 'A page of results plus an opaque cursor for the next page, or null when this is the last
-
-        page. Wire keys are frozen: `items` (already lowercase under the camelCase policy) and
-
-        `next_cursor` (pinned explicitly — the policy alone would emit `nextCursor`).'
-    ProjectResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        key:
-          type:
-          - string
-          - 'null'
         name:
           type:
           - string
@@ -593,49 +969,49 @@ components:
           type:
           - string
           - 'null'
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
+      additionalProperties: false
+      description: 'Request body for `PUT /api/v1/orgs/{org}/projects/{project}`. See
+
+        PublicCreateProjectRequest for why this is named distinctly from the
+
+        dashboard''s `UpdateProjectRequest`.'
+    ActionCapability:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        reason:
           type:
           - string
           - 'null'
-          format: date-time
-        _actions:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/ActionCapability'
-          description: 'Capability hints: which operations the authenticated caller may perform on this resource, each with allowed + optional reason. Computed from the caller''s role and the resource''s state. Injected at runtime; safe to ignore. Present only on top-level resource responses — nested occurrences (e.g. a rule inside a targeting-config response) do not carry it.'
       additionalProperties: false
-      description: 'Public representation of a project, returned by `GET /api/v1/orgs/{org}/projects` (list),
-
-        `GET .../projects/{project}` (detail), and the body of a successful create/update. Drops
-
-        the dashboard-only nested `Environments` collection from ProjectDto — the
-
-        public API surfaces environments via their own endpoint (Task 6), not embedded here.
-
-        UpdatedAt is only populated from ProjectDto (the detail/create
-
-        shape); ProjectListItemDto doesn''t carry it, so list rows leave it `null`.'
-      example:
-        id: 0197b69f-1a2b-7c3d-8e4f-5a6b7c8d9e0f
-        key: checkout
-        name: Checkout
-        description: Checkout and payments surfaces.
-        createdAt: '2026-06-01T12:00:00Z'
-        updatedAt: '2026-06-15T08:30:00Z'
+      description: 'One entry in a resource''s `_actions` block: may the caller perform it, and if not, why.'
+    NextAction:
+      required:
+      - method
+      - path
+      type: object
+      properties:
+        method:
+          type:
+          - string
+          - 'null'
+        path:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
   headers:
+    X-RateLimit-Remaining:
+      description: The number of requests remaining in the current rate-limit window.
+      schema:
+        type: integer
     X-RateLimit-Reset:
       description: The UTC time at which the current rate-limit window resets, as a Unix timestamp in seconds.
       schema:
         type: integer
     X-RateLimit-Limit:
       description: The maximum number of requests permitted per rate-limit window for this caller.
-      schema:
-        type: integer
-    X-RateLimit-Remaining:
-      description: The number of requests remaining in the current rate-limit window.
       schema:
         type: integer
   securitySchemes:
