@@ -1020,3 +1020,9 @@ components:
       description: JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.
       name: Authorization
       in: header
+x-provenance:
+  method: harvested
+  publisher: Featureflip
+  source: https://featureflip.io/openapi/public-v1.json
+  note: split by refine-openapis from the provider's own published document, verified by fetch (openapi/_original/*.fetch.json);
+    stamped by stamp-openapi-provenance.py (roadmap#793)
