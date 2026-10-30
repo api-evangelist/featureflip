@@ -1,5 +1,4 @@
-# featureflip
-Feature flag platform with automated dead-flag cleanup (via a GitHub Action), flat pricing, and API-first, agent-native surfaces. Exposes a Management REST API and a high-performance Evaluation API, both with public OpenAPI contracts, plus SDKs for many languages.
+# Featureflip
 
 <!-- API-EVANGELIST-PROVENANCE:BEGIN -->
 > ### About this repository
@@ -64,3 +63,136 @@ Feature flag platform with automated dead-flag cleanup (via a GitHub Action), fl
 >
 > Full detail: **[Where this data comes from](https://apievangelist.com/about/where-our-data-comes-from)**
 <!-- API-EVANGELIST-PROVENANCE:END -->
+
+Feature flag platform with automated dead-flag cleanup (via a GitHub Action), flat pricing, and API-first, agent-native surfaces. Exposes a Management REST API and a high-performance Evaluation API, both with public OpenAPI contracts, plus official SDKs for 13 languages, OpenFeature providers, a Terraform provider, and a local MCP server.
+
+**Areas:** Feature Flags · Feature Management · feature flag cleanup · Progressive Delivery · Experimentation · feature flags as code · OpenFeature · MCP · Developer Tools · DevOps/CI-CD
+
+## Featureflip on APIs.io
+
+Everything profiled for Featureflip is published on APIs.io rather than in this repository. Start at the provider page — **[apis.io/providers/featureflip/](https://apis.io/providers/featureflip/)** — or go straight to one of the APIs or properties below.
+
+### APIs (10)
+
+- [MCP Server (local)](https://apis.io/apis/featureflip/mcp-server-local/) — Documentation for the @featureflip/mcp server, a local stdio process run via npx that calls the Management API on your behalf using a bearer token.
+- [Featureflip Client SDK API](https://apis.io/apis/featureflip/featureflip-client-sdk-api/) — Client SDK endpoints for browser-side feature flag evaluation. All endpoints require a valid Client SDK key passed via the Authorization header. Unlike…
+- [Featureflip Environments API](https://apis.io/apis/featureflip/featureflip-environments-api/) — Environments within a resolved organization + project — one level deeper than ProjectsController. Every route here carries `{org}`, so ResolveTenantFilter…
+- [Featureflip Feature Flags API](https://apis.io/apis/featureflip/featureflip-feature-flags-api/) — Feature flags within a resolved organization + project — mirrors EnvironmentsController's resolve-then-dispatch shape one level deeper. `{project}` is…
+- [Featureflip Me API](https://apis.io/apis/featureflip/featureflip-me-api/) — The caller's own identity. This route has no `{org}` segment, so ResolveTenantFilter is a pass-through here — the caller is read entirely from the…
+- [Featureflip Organizations API](https://apis.io/apis/featureflip/featureflip-organizations-api/) — The caller's organizations. `List` has no `{org}` segment (pass-through tenant filter) and dispatches ListOrganizationsQuery, which already scopes to the…
+- [Featureflip Projects API](https://apis.io/apis/featureflip/featureflip-projects-api/) — Projects within a resolved organization. Every route here carries `{org}`, so ResolveTenantFilter has already resolved + access-checked it before any action…
+- [Featureflip SDK Keys API](https://apis.io/apis/featureflip/featureflip-sdk-keys-api/) — SDK keys within a resolved organization + project + environment — one level deeper than EnvironmentsController. Every action resolves `{project}`…
+- [Featureflip Server SDK API](https://apis.io/apis/featureflip/featureflip-server-sdk-api/) — SDK endpoints for feature flag evaluation and configuration retrieval. All endpoints require a valid SDK key passed via the Authorization header.
+- [Featureflip User Segments API](https://apis.io/apis/featureflip/featureflip-user-segments-api/) — User segments within a resolved organization + project — mirrors EnvironmentsController's resolve-then-dispatch shape one level deeper. `{project}` is…
+
+### Published properties
+
+Each property below is a page on APIs.io carrying the machine-readable artifact and what it says.
+
+#### MCP servers (1)
+
+Model Context Protocol servers that expose the API to agents.
+
+- [Featureflip MCP Server](https://apis.io/servers/featureflip/featureflip-mcp-server/)
+
+#### Overlays (2)
+
+OpenAPI overlays, including conversational phrasing for each operation.
+
+- [Featureflip Evaluation Overlay](https://apis.io/overlays/featureflip/featureflip-evaluation-overlay/)
+- [Featureflip Management Overlay](https://apis.io/overlays/featureflip/featureflip-management-overlay/)
+
+#### Governance rules (1)
+
+Spectral rulesets for the provider's contracts.
+
+- [Featureflip — spectral rules](https://apis.io/rules/featureflip/featureflip-spectral/)
+
+#### Security (2)
+
+Authentication, trust centre, and vulnerability disclosure.
+
+- [Featureflip Authentication](https://apis.io/security/featureflip/featureflip-authentication/)
+- [Featureflip Domain Security](https://apis.io/security/featureflip/featureflip-domain-security/)
+
+#### Plans and pricing (1)
+
+Published plans, tiers and prices.
+
+- [Featureflip Plans Pricing](https://apis.io/plans/featureflip/featureflip-plans-pricing/)
+
+#### Rate limits (1)
+
+Published request limits.
+
+- [Featureflip Rate Limits](https://apis.io/rate-limits/featureflip/featureflip-rate-limits/)
+
+## Where to find this API
+
+Links to the company's own pages. This repository publishes no copy of their specifications — the canonical document is theirs and lives at the URLs below.
+
+- [Website](https://featureflip.io/)
+- [Documentation](https://featureflip.io/docs/)
+- [Getting started](https://featureflip.io/docs/quickstart/javascript/)
+- [Pricing](https://featureflip.io/pricing/)
+- [Sign up](https://app.featureflip.io/signup)
+- [Support](https://featureflip.io/contact/)
+- [Blog](https://featureflip.io/blog/)
+- [Terms of service](https://featureflip.io/terms/)
+- [Privacy policy](https://featureflip.io/privacy/)
+- [GitHub](https://github.com/canopy-labs)
+
+## API Evangelist rating
+
+**Kin Score 50.2** — developing · rubric 0.25.0 · scored 2026-10-23
+
+| Facet | Score |
+|---|---|
+| Discoverability | 68.3 |
+| Contract quality | 47.0 |
+| Contract governance | 22.0 |
+| Operational transparency | 18.4 |
+| Developer ergonomics | 66.1 |
+| Access clarity | 63.2 |
+
+**Agent readiness 35.7** — agent-ready
+
+| Agent-readiness dimension | Result |
+|---|---|
+| Spec Presence | yes |
+| Agentic Access | — |
+| Reversibility Documented | documented (partial credit) |
+| MCP Server | documented (partial credit) |
+| Auth Clarity | bearer (partial credit) |
+| Idempotency | documented (partial credit) |
+| Error Semantics | verified |
+| OpenAPI Examples | — |
+| Rate Limit Signal | verified |
+| Event Surface Described | — |
+| Agent Skills | derived (partial credit) |
+| Well Known Catalog | — |
+| Consent Identity | — |
+| Agent Card | — |
+| Dry Run Mode | — |
+| Delegated Identity | — |
+| Protected Resource Metadata | — |
+| Dynamic Client Registration | — |
+| Agentic Commerce | — |
+| Pagination Ratio | — |
+| Operation Distinctiveness | distinct |
+
+**Regulatory alignment 24.5** — Horizontal (data, software, accessibility, platform)
+
+The rubric is published at [github.com/api-evangelist/kin-score](https://github.com/api-evangelist/kin-score). The per-check breakdown behind these numbers — which checks were earned, partial or missed — along with score history and how this provider compares to its peers, is available at [apis.io/providers/featureflip/](https://apis.io/providers/featureflip/).
+
+## How this profile is made
+
+API Evangelist profiles a company's public API surface the way a developer would find it: the website, developer portal and documentation, the specifications it publishes, its public repositories, and its pricing, status and changelog pages. From that it derives the properties above — contracts split per API, workflows, schemas, collections, governance rules, plans and rate limits — and scores them against the published [Kin Score rubric](https://github.com/api-evangelist/kin-score).
+
+The artifacts are published on [APIs.io](https://apis.io), not in this repository. This repository is the public record for Featureflip: the place to say something is wrong, missing or out of date, and to ask for a re-score or a removal.
+
+## Open an issue
+
+- **Something about this listing** — a wrong description, a missing API, a stale artifact or a question about the rating: [open an issue on this repository](https://github.com/api-evangelist/featureflip/issues/new).
+- **A new API, or one that is not in the catalog yet** — [submit it on APIs.io](https://apis.io/add/).
+- **Anything else** — [the APIs.io inbox](https://github.com/api-search/inbox/issues/new) or [info@apievangelist.com](mailto:info@apievangelist.com).
