@@ -1,0 +1,159 @@
+# Pricing transcribed from the provider's own page — see provenance. Numbers are quoted, not derived.
+generated: '2026-10-28'
+method: searched
+source: https://featureflip.io/pricing/
+sources:
+- https://featureflip.io/pricing/
+provenance:
+  tool: engine/economics/harvest_pricing.py
+  run: 20261028T161713
+  grounding: every price_text was found verbatim in the fetched page text
+audience: business-product
+pricing_basis: tiered-subscription
+delivery:
+  delivery: managed+licensed
+  method: page
+  read: '2026-10-28'
+  evidence: Need on-premise deployment, custom data retention or a contracted SLA? Enterprise pricing
+    is negotiated directly.
+  managed_tier: Team
+published: true
+note: Flat per-plan monthly pricing, explicitly not per-seat or usage-metered; Enterprise negotiated.
+  SDKs stated as Apache 2.0 licensed, but the platform itself is hosted.
+plan_count: 8
+currency: USD
+plans:
+- name: Free
+  price_text: $0 /mo
+  price: 0
+  currency: USD
+  period: month
+  unit: plan
+  included_quota: 10 flags per project, 2 environments per project, 1 project, up to 3 team members, 7-day
+    audit logs, 1 webhook endpoint, Management API access, community support
+  overage: Creating new flags/projects blocked beyond limits
+- name: Team
+  price_text: $49/mo
+  price: 49
+  currency: USD
+  period: month
+  unit: plan
+  included_quota: Unlimited flags, 3 environments per project, 3 projects, up to 5 team members, scheduled
+    changes, 30-day audit logs, 3 webhook endpoints, email support
+  overage: No usage metering or overage charges
+- name: Team (annual)
+  price_text: $39 /mo billed annually
+  price: 39
+  currency: USD
+  period: month
+  unit: plan
+  included_quota: Same as Team, billed annually (~20% saving)
+- name: Pro
+  price_text: $99/mo
+  price: 99
+  currency: USD
+  period: month
+  unit: plan
+  included_quota: Unlimited flags, 5 environments per project, 10 projects, up to 10 team members, flag
+    owners, 30-day audit logs, 3 webhook endpoints, email support
+  overage: No usage metering or overage charges
+- name: Pro (annual)
+  price_text: $79 /mo billed annually
+  price: 79
+  currency: USD
+  period: month
+  unit: plan
+  included_quota: Same as Pro, billed annually
+- name: Business
+  price_text: $249/mo
+  price: 249
+  currency: USD
+  period: month
+  unit: plan
+  included_quota: Unlimited flags, unlimited environments, 25 projects, up to 25 team members, SSO (OIDC),
+    90-day audit logs, unlimited webhook endpoints, priority support
+  overage: No usage metering or overage charges
+- name: Business (annual)
+  price_text: $199 /mo billed annually
+  price: 199
+  currency: USD
+  period: month
+  unit: plan
+  included_quota: Same as Business, billed annually
+- name: Enterprise
+  price_text: Contact us for Enterprise pricing.
+  period: none
+  included_quota: More than 25 projects/members, custom retention, SLA, dedicated support, on-premise
+    deployment, SAML/SCIM
+x-canonical:
+  generated: '2026-11-01'
+  vocabulary: engine/economics/plans-canonical.yml
+  models:
+  - hybrid
+  - metered
+  - subscription
+  units: []
+  plans:
+  - name: Free
+    access: other
+    model: metered
+    model_how: derived
+    units:
+    - other
+    periods:
+    - month
+  - name: Team
+    access: other
+    model: hybrid
+    model_how: derived
+    units:
+    - other
+    periods:
+    - month
+  - name: Team (annual)
+    access: other
+    model: subscription
+    model_how: derived
+    units:
+    - other
+    periods:
+    - month
+  - name: Pro
+    access: other
+    model: hybrid
+    model_how: derived
+    units:
+    - other
+    periods:
+    - month
+  - name: Pro (annual)
+    access: other
+    model: subscription
+    model_how: derived
+    units:
+    - other
+    periods:
+    - month
+  - name: Business
+    access: other
+    model: hybrid
+    model_how: derived
+    units:
+    - other
+    periods:
+    - month
+  - name: Business (annual)
+    access: other
+    model: subscription
+    model_how: derived
+    units:
+    - other
+    periods:
+    - month
+  - name: Enterprise
+    access: other
+    model: unstated
+    model_how: derived
+    units: []
+    periods:
+    - none
