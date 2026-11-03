@@ -86,7 +86,7 @@ plans:
   included_quota: More than 25 projects/members, custom retention, SLA, dedicated support, on-premise
     deployment, SAML/SCIM
 x-canonical:
-  generated: '2026-11-01'
+  generated: '2026-11-02'
   vocabulary: engine/economics/plans-canonical.yml
   models:
   - hybrid
